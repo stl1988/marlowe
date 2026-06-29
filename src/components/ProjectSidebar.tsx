@@ -316,7 +316,7 @@ export function ProjectSidebar({
             >
               <ShakespeareLogo className="w-6 h-6" />
               <h1 className="text-xl font-semibold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Shakespeare
+                Marlowe
               </h1>
             </button>
             {(onToggleSidebar || (onClose && isMobile)) && (

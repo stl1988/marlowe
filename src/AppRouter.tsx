@@ -4,6 +4,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 import { SessionMonitor } from "./components/SessionMonitor";
 import { URLFragmentHandler } from "./components/URLFragmentHandler";
 import { VersionCheck } from "./components/VersionCheck";
+import { SiteHead } from "./components/SiteHead";
 
 import Index from "./pages/Index";
 import Clone from "./pages/Clone";
@@ -31,6 +32,7 @@ import { ChangelogPage } from "./pages/ChangelogPage";
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <SiteHead />
       <Toaster />
       <VersionCheck />
       <ScrollToTop />

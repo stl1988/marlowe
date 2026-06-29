@@ -4,107 +4,101 @@
 
 @layer base {
   :root {
-    /* GitHub-inspired light theme with Shakespeare colors */
+    /* Marlowe light theme — teal primary, amber accent */
     --background: 0 0% 100%;
-    --foreground: 220 9% 9%;
+    --foreground: 180 10% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 9% 9%;
+    --card-foreground: 180 10% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 9% 9%;
+    --popover-foreground: 180 10% 8%;
 
-    /* Shakespeare purple as primary */
-    --primary: 271 81% 56%;
+    /* Marlowe teal — #0d9488 */
+    --primary: 174 75% 32%;
     --primary-foreground: 0 0% 100%;
 
-    /* GitHub-style secondary */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 9%;
+    --secondary: 174 20% 95%;
+    --secondary-foreground: 174 30% 15%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 174 15% 95%;
+    --muted-foreground: 180 8% 45%;
 
-    /* Shakespeare gold as accent */
-    --accent: 45 93% 58%;
-    --accent-foreground: 220 9% 9%;
+    /* Marlowe amber accent — #f59e0b */
+    --accent: 43 96% 50%;
+    --accent-foreground: 180 10% 8%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* GitHub-style borders */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 271 81% 56%;
+    --border: 174 15% 88%;
+    --input: 174 15% 88%;
+    --ring: 174 75% 32%;
 
     --radius: 0.75rem;
 
-    /* Sidebar colors - Enhanced purple theme */
-    --sidebar-background: 271 81% 96%;
-    --sidebar-foreground: 271 81% 15%;
-    --sidebar-primary: 271 81% 56%;
+    /* Sidebar — dark teal navy */
+    --sidebar-background: 174 30% 97%;
+    --sidebar-foreground: 174 40% 12%;
+    --sidebar-primary: 174 75% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 271 81% 92%;
-    --sidebar-accent-foreground: 271 81% 15%;
-    --sidebar-border: 271 81% 85%;
-    --sidebar-ring: 271 81% 56%;
+    --sidebar-accent: 174 40% 92%;
+    --sidebar-accent-foreground: 174 40% 12%;
+    --sidebar-border: 174 30% 84%;
+    --sidebar-ring: 174 75% 32%;
 
-    /* GitHub-style success and warning */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
-    --warning: 45 93% 58%;
-    --warning-foreground: 220 9% 9%;
+    --warning: 43 96% 50%;
+    --warning-foreground: 180 10% 8%;
   }
 
   .dark {
-    /* GitHub-inspired dark theme with Shakespeare colors */
-    --background: 220 13% 9%;
-    --foreground: 220 14% 93%;
+    /* Marlowe dark theme — deep ocean bg, bright teal primary */
+    --background: 180 14% 8%;
+    --foreground: 174 20% 93%;
 
-    --card: 220 13% 11%;
-    --card-foreground: 220 14% 93%;
+    --card: 180 14% 10%;
+    --card-foreground: 174 20% 93%;
 
-    --popover: 220 13% 11%;
-    --popover-foreground: 220 14% 93%;
+    --popover: 180 14% 10%;
+    --popover-foreground: 174 20% 93%;
 
-    /* Shakespeare purple (lighter for dark mode) */
-    --primary: 271 81% 65%;
-    --primary-foreground: 220 13% 9%;
+    /* Marlowe teal bright for dark — #2dd4bf */
+    --primary: 174 72% 50%;
+    --primary-foreground: 180 14% 8%;
 
-    /* GitHub dark secondary */
-    --secondary: 220 13% 15%;
-    --secondary-foreground: 220 14% 93%;
+    --secondary: 180 14% 15%;
+    --secondary-foreground: 174 20% 93%;
 
-    --muted: 220 13% 15%;
-    --muted-foreground: 220 9% 63%;
+    --muted: 180 14% 15%;
+    --muted-foreground: 174 15% 60%;
 
-    /* Shakespeare gold (adjusted for dark mode) */
-    --accent: 45 93% 65%;
-    --accent-foreground: 220 13% 9%;
+    /* Amber in dark mode */
+    --accent: 43 96% 56%;
+    --accent-foreground: 180 14% 8%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* GitHub dark borders */
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 271 81% 65%;
+    --border: 180 14% 18%;
+    --input: 180 14% 18%;
+    --ring: 174 72% 50%;
 
-    /* Sidebar dark colors - Enhanced purple theme */
-    --sidebar-background: 271 81% 8%;
-    --sidebar-foreground: 271 81% 90%;
-    --sidebar-primary: 271 81% 65%;
-    --sidebar-primary-foreground: 271 81% 8%;
-    --sidebar-accent: 271 81% 15%;
-    --sidebar-accent-foreground: 271 81% 90%;
-    --sidebar-border: 271 81% 20%;
-    --sidebar-ring: 271 81% 65%;
+    /* Sidebar dark — deep teal */
+    --sidebar-background: 180 20% 7%;
+    --sidebar-foreground: 174 30% 88%;
+    --sidebar-primary: 174 72% 50%;
+    --sidebar-primary-foreground: 180 20% 7%;
+    --sidebar-accent: 180 20% 13%;
+    --sidebar-accent-foreground: 174 30% 88%;
+    --sidebar-border: 180 20% 16%;
+    --sidebar-ring: 174 72% 50%;
 
-    /* Dark mode success and warning */
     --success: 142 76% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 45 93% 65%;
-    --warning-foreground: 220 13% 9%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 180 14% 8%;
   }
 }
 

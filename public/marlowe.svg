@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="0" fill="#0a1a1a"/>
+  <!-- Quill feather -->
+  <path d="M380 80 C340 120 200 200 140 400 C180 360 260 280 340 240 C320 300 280 360 240 420 C280 400 360 340 400 260 C380 300 360 340 320 380 C360 320 420 220 440 140 C420 160 400 200 380 220 C400 160 420 100 380 80Z" fill="#0d9488" opacity="0.9"/>
+  <!-- Quill spine -->
+  <path d="M380 80 L140 400" stroke="#99f6e4" stroke-width="3" stroke-linecap="round"/>
+  <!-- Nib glow -->
+  <circle cx="140" cy="400" r="12" fill="#0d9488"/>
+  <circle cx="140" cy="400" r="6" fill="#99f6e4"/>
+  <!-- Spark lines at nib -->
+  <line x1="120" y1="420" x2="105" y2="435" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="140" y1="425" x2="138" y2="445" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="155" y1="415" x2="170" y2="428" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Small spark dots -->
+  <circle cx="100" cy="440" r="3" fill="#67e8f9"/>
+  <circle cx="158" cy="442" r="2.5" fill="#67e8f9"/>
+  <circle cx="132" cy="452" r="2" fill="#a5f3fc"/>
+</svg>
