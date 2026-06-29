@@ -4,13 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { useProjectsManager } from '@/hooks/useProjectsManager';
 import { useFS } from '@/hooks/useFS';
 import { useFSPaths } from '@/hooks/useFSPaths';
-import { addConsoleMessage, getConsoleMessages, type ConsoleMessage } from '@/lib/consoleMessages';
+import { addConsoleMessage, getConsoleMessages, clearConsoleMessages, type ConsoleMessage } from '@/lib/consoleMessages';
 import { useConsoleError } from '@/hooks/useConsoleError';
 import { useBuildProject } from '@/hooks/useBuildProject';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, ArrowLeft, Bug, Copy, Check, Loader2, Code, X, Terminal, Expand, Shrink, Hammer, RefreshCw } from 'lucide-react';
+import { FolderOpen, ArrowLeft, Bug, Copy, Check, Loader2, Code, X, Terminal, Expand, Shrink, Hammer, RefreshCw, Trash2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { GitStatusIndicator } from '@/components/GitStatusIndicator';
 import { BranchSwitcher } from '@/components/BranchSwitcher';
@@ -290,6 +290,9 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
   }, [sendNavigationCommand]);
 
   const refreshIframe = useCallback(() => {
+    // Clear stale console messages before reloading so the logs panel
+    // and the Quilly error banner start fresh after a reload.
+    clearConsoleMessages();
     // Force a full remount of the iframe rather than sending a `refresh`
     // JSON-RPC command. The RPC path is unreliable during rapid build
     // cycles because the command has to traverse two iframes (outer
@@ -837,24 +840,36 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                         </div>
                         <div className="flex items-center gap-2">
                           {messageCount > 0 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={copyAllMessagesToClipboard}
-                              className="h-7 px-2 text-xs"
-                            >
-                              {copiedAll ? (
-                                <>
-                                  <Check className="h-3 w-3 mr-1.5 text-success" />
-                                  {t('copied')}
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="h-3 w-3 mr-1.5" />
-                                  {t('copyAll')}
-                                </>
-                              )}
-                            </Button>
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={copyAllMessagesToClipboard}
+                                className="h-7 px-2 text-xs"
+                              >
+                                {copiedAll ? (
+                                  <>
+                                    <Check className="h-3 w-3 mr-1.5 text-success" />
+                                    {t('copied')}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="h-3 w-3 mr-1.5" />
+                                    {t('copyAll')}
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={clearConsoleMessages}
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                                title="Clear console"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1.5" />
+                                Clear
+                              </Button>
+                            </>
                           )}
                           <Button
                             variant="ghost"

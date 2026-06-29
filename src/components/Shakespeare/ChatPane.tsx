@@ -50,7 +50,7 @@ import { createMCPTools } from '@/lib/tools/MCPTool';
 import { TodoWriteTool } from '@/lib/tools/TodoWriteTool';
 import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
-import { ProjectPreviewConsoleError } from '@/lib/consoleMessages';
+import { ProjectPreviewConsoleError, clearConsoleMessages } from '@/lib/consoleMessages';
 import { toolToOpenAI } from '@/lib/tools/openai-adapter';
 import { Tool } from '@/lib/tools/Tool';
 import OpenAI from 'openai';
@@ -934,6 +934,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
               onOpenModelSelector={openModelSelector}
               onTryAgain={() => startGeneration(providerModel)}
               onRequestConsoleErrorHelp={handleConsoleErrorHelp}
+              onClearConsole={clearConsoleMessages}
               providerModel={providerModel}
             />
           )}

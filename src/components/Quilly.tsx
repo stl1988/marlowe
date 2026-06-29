@@ -21,6 +21,7 @@ export interface QuillyProps {
   onOpenModelSelector: () => void;
   onTryAgain?: () => void;
   onRequestConsoleErrorHelp?: (error: ProjectPreviewConsoleError) => void;
+  onClearConsole?: () => void;
   providerModel: string;
 }
 
@@ -39,25 +40,36 @@ interface QuillyContentProps {
   onOpenModelSelector: () => void;
   onTryAgain?: () => void;
   onRequestConsoleErrorHelp?: (error: ProjectPreviewConsoleError) => void;
+  onClearConsole?: () => void;
   provider: AIProvider | undefined;
 }
 
-function QuillyContent({ error, onDismiss, onNewChat, onOpenModelSelector, onTryAgain, onRequestConsoleErrorHelp, provider }: QuillyContentProps) {
+function QuillyContent({ error, onDismiss, onNewChat, onOpenModelSelector, onTryAgain, onRequestConsoleErrorHelp, onClearConsole, provider }: QuillyContentProps) {
   const navigate = useNavigate();
   const { isOffline } = useOffline();
 
   const renderBody = (error: Error | APIError | MalformedToolCallError | ProjectPreviewConsoleError): ErrorBody & { showCreditsButton?: boolean } => {
     // Handle Project Preview Console Errors
     if (error instanceof ProjectPreviewConsoleError) {
-      return {
-        message: 'I noticed some console errors in your project preview. Would you like me to take a look and help fix them?',
-        actions: [{
-          label: 'Help fix errors',
+      const actions: Array<{ label: string; onClick: () => void }> = [{
+        label: 'Help fix errors',
+        onClick: () => {
+          onRequestConsoleErrorHelp?.(error);
+          onDismiss();
+        },
+      }];
+      if (onClearConsole) {
+        actions.push({
+          label: 'Clear console',
           onClick: () => {
-            onRequestConsoleErrorHelp?.(error);
+            onClearConsole();
             onDismiss();
           },
-        }],
+        });
+      }
+      return {
+        message: 'I noticed some console errors in your project preview. Would you like me to take a look and help fix them?',
+        actions,
       };
     }
 
@@ -290,7 +302,7 @@ function QuillyCreditsButton({ provider }: QuillyCreditsButtonProps) {
   );
 }
 
-export function Quilly({ error, onDismiss, onNewChat, onOpenModelSelector, onTryAgain, onRequestConsoleErrorHelp, providerModel }: QuillyProps) {
+export function Quilly({ error, onDismiss, onNewChat, onOpenModelSelector, onTryAgain, onRequestConsoleErrorHelp, onClearConsole, providerModel }: QuillyProps) {
   const { settings } = useAISettings();
 
   // Handle empty provider model gracefully
@@ -310,6 +322,7 @@ export function Quilly({ error, onDismiss, onNewChat, onOpenModelSelector, onTry
       onOpenModelSelector={onOpenModelSelector}
       onTryAgain={onTryAgain}
       onRequestConsoleErrorHelp={onRequestConsoleErrorHelp}
+      onClearConsole={onClearConsole}
       provider={provider}
     />
   );
