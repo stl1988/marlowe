@@ -268,6 +268,10 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
   const [showPictureUrlInput, setShowPictureUrlInput] = useState(false);
   const [showBannerUrlInput, setShowBannerUrlInput] = useState(false);
 
+  const updateField = useCallback(<K extends keyof AppFormData>(key: K, value: AppFormData[K]) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   const openVfsPicker = useCallback((target: 'picture' | 'banner') => {
     setVfsPickerTarget(target);
     setVfsPickerOpen(true);
@@ -347,10 +351,6 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
       }));
     }).catch(() => {/* silently ignore */});
   }, [open, hasApp, isLoading, fs, cwd, projectId]);
-
-  const updateField = useCallback(<K extends keyof AppFormData>(key: K, value: AppFormData[K]) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  }, []);
 
   const addTag = useCallback(() => {
     const tag = newTag.trim().toLowerCase();
