@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { Tool } from './Tool';
 
 /**
@@ -15,7 +16,7 @@ export function toolToOpenAI<TParams>(name: string, tool: Tool<TParams>): OpenAI
   };
 
   if (tool.inputSchema) {
-    functionDef.parameters = tool.inputSchema.toJSONSchema();
+    functionDef.parameters = zodToJsonSchema(tool.inputSchema) as Record<string, unknown>;
   } else {
     functionDef.parameters = { type: "object", properties: {} };
   }
