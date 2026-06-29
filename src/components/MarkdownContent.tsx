@@ -1,50 +1,12 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import Prism from 'prismjs';
-
-// Load common language grammars
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/components/prism-tsx';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-markup';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-rust';
-import 'prismjs/components/prism-go';
-import 'prismjs/components/prism-yaml';
-import 'prismjs/components/prism-toml';
-import 'prismjs/components/prism-sql';
-import 'prismjs/components/prism-diff';
-import 'prismjs/components/prism-markdown';
 
 interface MarkdownContentProps {
   children: string;
   className?: string;
-  /** Whether to use lighter rendering for incomplete/streaming markdown */
-  parseIncompleteMarkdown?: boolean;
   /** 'light' | 'dark' — controls code block colors */
   theme?: 'light' | 'dark';
-}
-
-/** Map common language aliases to Prism grammar names */
-function normalizeLang(lang: string): string {
-  const map: Record<string, string> = {
-    js: 'javascript',
-    ts: 'typescript',
-    sh: 'bash',
-    shell: 'bash',
-    zsh: 'bash',
-    yml: 'yaml',
-    html: 'markup',
-    xml: 'markup',
-    svelte: 'markup',
-    vue: 'markup',
-  };
-  return map[lang.toLowerCase()] ?? lang.toLowerCase();
 }
 
 export const MarkdownContent = memo(function MarkdownContent({
@@ -52,29 +14,22 @@ export const MarkdownContent = memo(function MarkdownContent({
   className,
   theme = 'light',
 }: MarkdownContentProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Re-highlight after render (handles dynamic content)
-  useEffect(() => {
-    if (containerRef.current) {
-      Prism.highlightAllUnder(containerRef.current);
-    }
-  });
+  const isDark = theme === 'dark';
 
   return (
-    <div ref={containerRef} className={className}>
+    <div className={className}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Code blocks with syntax highlighting
-          code({ node, className: langClassName, children: codeChildren, ...props }) {
+          // Code blocks
+          code({ className: langClassName, children: codeChildren, ...props }) {
             const match = /language-(\w+)/.exec(langClassName ?? '');
-            const lang = match ? normalizeLang(match[1]) : '';
-            const isBlock = !!(node?.position?.start.line !== node?.position?.end.line || lang);
+            const lang = match ? match[1] : '';
+            // react-markdown v10: inline code has no className
+            const isBlock = Boolean(langClassName);
             const code = String(codeChildren).replace(/\n$/, '');
 
             if (!isBlock) {
-              // Inline code
               return (
                 <code
                   className="bg-muted px-1 py-0.5 rounded text-[0.85em] font-mono"
@@ -85,27 +40,15 @@ export const MarkdownContent = memo(function MarkdownContent({
               );
             }
 
-            const grammar = lang && Prism.languages[lang];
-            const highlighted = grammar
-              ? Prism.highlight(code, grammar, lang)
-              : null;
-
             return (
-              <div className={`rounded-md overflow-hidden my-3 border ${theme === 'dark' ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
+              <div className={`rounded-md overflow-hidden my-3 border text-sm ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-50 border-zinc-200'}`}>
                 {lang && (
-                  <div className={`px-3 py-1 text-xs font-mono border-b ${theme === 'dark' ? 'text-zinc-400 border-zinc-700' : 'text-zinc-500 border-zinc-200'}`}>
+                  <div className={`px-3 py-1 text-xs font-mono border-b ${isDark ? 'text-zinc-400 border-zinc-700' : 'text-zinc-500 border-zinc-200'}`}>
                     {lang}
                   </div>
                 )}
-                <pre className="overflow-x-auto p-3 text-sm leading-relaxed m-0">
-                  {highlighted ? (
-                    <code
-                      className={`language-${lang} font-mono`}
-                      dangerouslySetInnerHTML={{ __html: highlighted }}
-                    />
-                  ) : (
-                    <code className="font-mono">{code}</code>
-                  )}
+                <pre className="overflow-x-auto p-3 leading-relaxed m-0">
+                  <code className="font-mono">{code}</code>
                 </pre>
               </div>
             );
