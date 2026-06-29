@@ -60,8 +60,8 @@ export default function Index() {
   }, [providerModel, settings.recentlyUsedModels]);
 
   useSeoMeta({
-    title: 'Shakespeare - Open Source AI Builder',
-    description: 'Build custom apps with AI assistance using Shakespeare, an AI-powered development environment.',
+    title: 'Marlowe — Open Source AI App Builder',
+    description: 'Build custom apps through natural language conversation. AI-powered development that runs entirely in your browser.',
   });
 
   // Restore prompt from local storage on mount
