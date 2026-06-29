@@ -11,13 +11,15 @@ import { VFSImage } from '@/components/VFSImage';
 
 interface FileEditorProps {
   filePath: string;
+  /** Absolute VFS path to the project root, e.g. /projects/my-project */
+  projectPath?: string;
   content: string;
   onSave: (content: string) => void;
   isLoading: boolean;
   projectId?: string;
 }
 
-export function FileEditor({ filePath, content, onSave, isLoading, projectId }: FileEditorProps) {
+export function FileEditor({ filePath, projectPath, content, onSave, isLoading, projectId }: FileEditorProps) {
   const { t } = useTranslation();
   const [editedContent, setEditedContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
@@ -155,7 +157,7 @@ export function FileEditor({ filePath, content, onSave, isLoading, projectId }: 
         ) : isMedia && mediaCategory === 'image' ? (
           <div className="flex flex-col items-center justify-center h-full p-4">
             <VFSImage
-              path={filePath}
+              path={projectPath ? `${projectPath}/${filePath}` : filePath}
               alt={filePath.split('/').pop() ?? filePath}
               className="max-w-full max-h-full object-contain rounded-md"
             />

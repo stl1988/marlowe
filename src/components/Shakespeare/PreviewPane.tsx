@@ -1011,6 +1011,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                     {selectedFile ? (
                       <FileEditor
                         filePath={selectedFile}
+                        projectPath={`${projectsPath}/${projectId}`}
                         content={fileContent}
                         onSave={handleFileSave}
                         isLoading={isLoading}
@@ -1108,6 +1109,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                       {selectedFile ? (
                         <FileEditor
                           filePath={selectedFile}
+                          projectPath={`${projectsPath}/${projectId}`}
                           content={fileContent}
                           onSave={handleFileSave}
                           isLoading={isLoading}
