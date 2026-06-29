@@ -8,7 +8,6 @@ import { GitBranch, Loader2, AlertCircle, FileArchive, MoreHorizontal, Search } 
 import { useProjectsManager } from '@/hooks/useProjectsManager';
 import { useToast } from '@/hooks/useToast';
 import { ZipImportDialog } from '@/components/ZipImportDialog';
-import { useSeoMeta } from '@unhead/react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useUserRepositories } from '@/hooks/useUserRepositories';
@@ -82,10 +81,7 @@ export default function Clone() {
     staleTime: 60000, // 1 minute
   });
 
-  useSeoMeta({
-    title: `${t('importRepository')} - Shakespeare`,
-    description: t('cloneGitRepository'),
-  });
+
 
   /** Convert GitHub/GitLab web URLs to git clone URLs (append .git if needed). */
   const normalizeGitUrl = (url: string): string => {

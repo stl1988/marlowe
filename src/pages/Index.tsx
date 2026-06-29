@@ -21,7 +21,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { ModelSelector } from '@/components/ModelSelector';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { ArrowUp } from 'lucide-react';
-import { useSeoMeta } from '@unhead/react';
 import { ShakespeareLogo } from '@/components/ShakespeareLogo';
 import { AppShowcase } from '@/components/AppShowcase';
 export default function Index() {
@@ -58,11 +57,6 @@ export default function Index() {
       setProviderModel(settings.recentlyUsedModels[0]);
     }
   }, [providerModel, settings.recentlyUsedModels]);
-
-  useSeoMeta({
-    title: 'Marlowe — Open Source AI App Builder',
-    description: 'Build custom apps through natural language conversation. AI-powered development that runs entirely in your browser.',
-  });
 
   // Restore prompt from local storage on mount
   useEffect(() => {

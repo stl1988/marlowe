@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSeoMeta } from '@unhead/react';
 import { Bug, FlaskConical, Minus, Package, Plus, RefreshCw, ScrollText, ShieldAlert } from 'lucide-react';
 
 import { AppLayout } from '@/components/AppLayout';
@@ -36,10 +35,7 @@ export function ChangelogPage() {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
-  useSeoMeta({
-    title: 'Changelog | Shakespeare',
-    description: "What's new in Shakespeare",
-  });
+
 
   useEffect(() => {
     fetch('/CHANGELOG.md')

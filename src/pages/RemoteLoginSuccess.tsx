@@ -9,7 +9,7 @@ import { CheckCircle2 } from "lucide-react";
 const RemoteLoginSuccess = () => {
   useSeoMeta({
     title: "Signer connected",
-    description: "You can return to Shakespeare.",
+    description: "You can return to Marlowe.",
   });
 
   useEffect(() => {
