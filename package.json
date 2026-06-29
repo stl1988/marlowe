@@ -105,7 +105,6 @@
     "react-router-dom": "^6.26.2",
     "recharts": "^2.12.7",
     "remark-gfm": "^4.0.1",
-    "streamdown": "~1.0.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-safe-area": "^0.8.0",

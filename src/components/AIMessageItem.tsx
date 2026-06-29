@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Streamdown } from 'streamdown';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import type { AIMessage } from '@/lib/SessionManager';
 import { cn } from '@/lib/utils';
@@ -175,15 +175,12 @@ export const AIMessageItem = memo(({
 
               {isReasoningExpanded && (
                 <div className="mt-1 p-3 bg-muted/30 rounded border text-xs">
-                  <div className="whitespace-pre-wrap break-words">
-                    <Streamdown
-                      className='size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
-                      parseIncompleteMarkdown={isCurrentlyLoading}
-                      shikiTheme={displayTheme === 'dark' ? 'github-dark' : 'github-light'}
-                    >
-                      {message.reasoning_content}
-                    </Streamdown>
-                  </div>
+                  <MarkdownContent
+                    className='size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
+                    theme={displayTheme === 'dark' ? 'dark' : 'light'}
+                  >
+                    {message.reasoning_content}
+                  </MarkdownContent>
                 </div>
               )}
             </div>
@@ -192,13 +189,12 @@ export const AIMessageItem = memo(({
           {/* Main content display */}
           {getContent().trim() && (
             <div className="break-words">
-              <Streamdown
+              <MarkdownContent
                 className='size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0'
-                parseIncompleteMarkdown={isCurrentlyLoading}
-                shikiTheme={displayTheme === 'dark' ? 'github-dark' : 'github-light'}
+                theme={displayTheme === 'dark' ? 'dark' : 'light'}
               >
                 {getContent()}
-              </Streamdown>
+              </MarkdownContent>
             </div>
           )}
 

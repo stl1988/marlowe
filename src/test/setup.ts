@@ -39,14 +39,6 @@ vi.mock('*.css', () => ({}));
 vi.mock('*.scss', () => ({}));
 vi.mock('*.sass', () => ({}));
 
-// Mock KaTeX CSS specifically
-vi.mock('katex/dist/katex.min.css', () => ({}));
-
-// Mock Streamdown component that might be importing KaTeX
-vi.mock('streamdown', () => ({
-  Streamdown: ({ children }: { children: React.ReactNode }) => children
-}));
-
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
