@@ -25,6 +25,8 @@ export interface AISettings {
   recentlyUsedModels: string[];
   imageModel?: string;
   mcpServers?: MCPServers;
+  /** Built-in tool names that are disabled. Omitting a name means the tool is enabled. */
+  disabledBuiltinTools?: string[];
 }
 
 export interface AISettingsContextType {

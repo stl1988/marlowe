@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import { Square, ArrowUp } from 'lucide-react';
+import { Square, ArrowUp, PlusSquare, AlertTriangle } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
 
 export interface SlashCommand {
@@ -37,6 +37,7 @@ interface ChatInputProps {
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   slashCommands?: SlashCommand[];
+  onNewChat?: () => void;
 }
 
 export const ChatInput = memo(function ChatInput({
@@ -61,6 +62,7 @@ export const ChatInput = memo(function ChatInput({
   onDragLeave,
   onDrop,
   slashCommands = [],
+  onNewChat,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -196,8 +198,32 @@ export const ChatInput = memo(function ChatInput({
     };
   }, [showSlashCommands]);
 
+  // Context warning thresholds
+  const isContextWarning = contextUsagePercentage >= 75 && contextUsagePercentage < 90;
+  const isContextCritical = contextUsagePercentage >= 90;
+
   return (
     <div className="border-t p-4">
+      {/* Context window warning banner */}
+      {(isContextWarning || isContextCritical) && currentModelContextLength && lastInputTokens && (
+        <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-xs ${isContextCritical ? 'bg-destructive/10 text-destructive border border-destructive/20' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'}`}>
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="flex-1">
+            Context window {isContextCritical ? 'almost full' : 'filling up'}: {lastInputTokens.toLocaleString()} / {currentModelContextLength.toLocaleString()} tokens ({contextUsagePercentage.toFixed(0)}%)
+          </span>
+          {onNewChat && (
+            <button
+              type="button"
+              onClick={onNewChat}
+              className="flex items-center gap-1 font-medium underline underline-offset-2 hover:opacity-70 transition-opacity whitespace-nowrap ml-1"
+            >
+              <PlusSquare className="h-3.5 w-3.5" />
+              New chat
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Chat Input Container */}
       <div
         className={`flex flex-col rounded-2xl border border-input bg-background shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-all ${
@@ -278,12 +304,16 @@ export const ChatInput = memo(function ChatInput({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="cursor-help">
+                  <div className={`cursor-help flex items-center gap-1 ${isContextCritical ? 'text-destructive' : isContextWarning ? 'text-amber-500' : ''}`}>
                     <CircularProgress
                       value={contextUsagePercentage}
                       size={20}
                       strokeWidth={2}
+                      className={isContextCritical ? '[&_.text-primary]:text-destructive' : isContextWarning ? '[&_.text-primary]:text-amber-500' : ''}
                     />
+                    {isContextCritical && (
+                      <span className="text-xs font-medium tabular-nums">{contextUsagePercentage.toFixed(0)}%</span>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>

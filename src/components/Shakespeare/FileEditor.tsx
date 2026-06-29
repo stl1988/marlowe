@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Save, Loader2, ImageOff } from 'lucide-react';
+import { Save, Loader2, FileVideo, Music, FileArchive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGitStatus } from '@/hooks/useGitStatus';
 import { isMediaFile } from '@/lib/fileUtils';
+import { VFSImage } from '@/components/VFSImage';
 
 interface FileEditorProps {
   filePath: string;
@@ -96,6 +97,18 @@ export function FileEditor({ filePath, content, onSave, isLoading, projectId }: 
   const gitStatusClasses = getGitStatusClasses(currentFileGitStatus);
   const isMedia = isMediaFile(filePath);
 
+  /** Returns the media category for binary files */
+  const getMediaCategory = (path: string): 'image' | 'video' | 'audio' | 'archive' | 'other' => {
+    const ext = path.split('.').pop()?.toLowerCase() ?? '';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif', 'heic', 'heif'].includes(ext)) return 'image';
+    if (['mp4', 'webm', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'm4v'].includes(ext)) return 'video';
+    if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ext)) return 'audio';
+    if (['pdf', 'zip', 'tar', 'gz', 'rar', '7z'].includes(ext)) return 'archive';
+    return 'other';
+  };
+
+  const mediaCategory = isMedia ? getMediaCategory(filePath) : null;
+
   return (
     <div className="h-full flex flex-col">
       <CardHeader className="border-b py-2 sm:py-3">
@@ -139,9 +152,21 @@ export function FileEditor({ filePath, content, onSave, isLoading, projectId }: 
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
+        ) : isMedia && mediaCategory === 'image' ? (
+          <div className="flex flex-col items-center justify-center h-full p-4">
+            <VFSImage
+              path={filePath}
+              alt={filePath.split('/').pop() ?? filePath}
+              className="max-w-full max-h-full object-contain rounded-md"
+            />
+          </div>
         ) : isMedia ? (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <ImageOff className="h-16 w-16 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-3">
+            {mediaCategory === 'video' && <FileVideo className="h-16 w-16 text-muted-foreground" />}
+            {mediaCategory === 'audio' && <Music className="h-16 w-16 text-muted-foreground" />}
+            {(mediaCategory === 'archive' || mediaCategory === 'other') && <FileArchive className="h-16 w-16 text-muted-foreground" />}
+            <p className="text-sm text-muted-foreground">{filePath.split('/').pop()}</p>
+            <p className="text-xs text-muted-foreground/60">Binary file — preview not available</p>
           </div>
         ) : (
           <Textarea

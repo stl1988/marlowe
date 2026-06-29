@@ -294,31 +294,47 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
   // MCP tools wrapped for execution
   const mcpToolWrappers = useMemo(() => createMCPTools(mcpClients), [mcpClients]);
 
-  // Combined tool executors (for SessionManager to call)
-  const customTools = useMemo(() => ({
-    ...builtInTools,
-    ...mcpToolWrappers,
-  }), [builtInTools, mcpToolWrappers]);
+  // Get the set of disabled built-in tools from settings
+  const disabledBuiltinTools = useMemo(
+    () => new Set(settings.disabledBuiltinTools ?? []),
+    [settings.disabledBuiltinTools],
+  );
+
+  // Combined tool executors (for SessionManager to call), with disabled tools filtered out
+  const customTools = useMemo(() => {
+    const filtered: Record<string, Tool<unknown>> = {};
+    for (const [name, tool] of Object.entries(builtInTools)) {
+      if (!disabledBuiltinTools.has(name)) {
+        filtered[name] = tool;
+      }
+    }
+    return {
+      ...filtered,
+      ...mcpToolWrappers,
+    };
+  }, [builtInTools, mcpToolWrappers, disabledBuiltinTools]);
 
   // Convert tools to OpenAI format for AI provider
   const tools = useMemo(() => {
     const result: Record<string, OpenAI.Chat.Completions.ChatCompletionTool> = {};
 
-    // Convert built-in tools to OpenAI format
+    // Convert built-in tools to OpenAI format, skipping disabled ones
     for (const [name, tool] of Object.entries(builtInTools)) {
-      result[name] = toolToOpenAI(name, tool as Tool<unknown>);
+      if (!disabledBuiltinTools.has(name)) {
+        result[name] = toolToOpenAI(name, tool as Tool<unknown>);
+      }
     }
 
     // Add MCP tools (already in OpenAI format from useMCPTools)
     Object.assign(result, mcpOpenAITools);
 
     return result;
-  }, [builtInTools, mcpOpenAITools]);
+  }, [builtInTools, mcpOpenAITools, disabledBuiltinTools]);
 
   // Keep-alive functionality to prevent tab throttling during AI processing
   const { updateMetadata } = useKeepAlive({
     enabled: externalIsLoading || isBuildLoading,
-    title: 'Shakespeare',
+    title: 'Marlowe',
     artist: `Working on ${projectId}...`,
     artwork: [
       {
@@ -960,6 +976,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         slashCommands={slashCommands}
+        onNewChat={() => { internalStartNewSession(); onNewChat(); }}
       />
 
       {/* Onboarding Dialog */}

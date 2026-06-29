@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "name": "Shakespeare - Open Source AI Builder",
-  "short_name": "Shakespeare",
-  "description": "Build custom apps with AI assistance using Shakespeare, an open-source development environment",
+  "name": "Marlowe - Open Source AI Builder",
+  "short_name": "Marlowe",
+  "description": "Build custom apps with AI assistance using Marlowe, an open-source development environment",
   "categories": ["productivity", "devtools"],
   "id": "/",
   "scope": "/",

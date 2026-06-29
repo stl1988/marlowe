@@ -1,6 +1,6 @@
 {
-  "name": "shakespeare.diy",
-  "description": "Build custom apps with AI assistance using Shakespeare, an open-source development environment",
+  "name": "marlowe",
+  "description": "Build custom apps with AI assistance using Marlowe, an open-source development environment based on Shakespeare",
   "homepage": "https://shakespeare.diy",
   "license": "AGPL-3.0-or-later",
   "version": "9.14.0",

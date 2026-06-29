@@ -22,6 +22,7 @@ import type { AIProvider } from '@/contexts/AISettingsContext';
 import { AI_PROVIDER_PRESETS, type PresetProvider } from '@/lib/aiProviderPresets';
 import { MCPServersSection } from '@/components/MCPServersSection';
 import { PluginsSection } from '@/components/PluginsSection';
+import { BuiltinPluginsSection } from '@/components/BuiltinPluginsSection';
 import { ProjectTemplatesSection } from '@/components/ProjectTemplatesSection';
 import { defaultSystemPrompt } from '@/lib/system';
 import { ModelInput } from '@/components/ModelInput';
@@ -344,6 +345,10 @@ export function AISettings() {
 
                 {/* Plugins Section */}
                 <PluginsSection />
+                <Separator />
+
+                {/* Built-in Tools Section */}
+                <BuiltinPluginsSection />
                 <Separator />
 
                 {/* System Prompt Configuration */}

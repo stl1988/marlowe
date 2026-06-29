@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -35,9 +35,12 @@ import {
   Pencil,
   ChevronDown,
   CircleHelp,
+  FolderOpen,
+  Link,
 } from 'lucide-react';
 import type { NostrEvent } from '@nostrify/nostrify';
 import { nip19 } from 'nostr-tools';
+import { VFSImagePicker } from '@/components/VFSImagePicker';
 
 interface AppDialogProps {
   projectId: string;
@@ -256,6 +259,57 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+  // VFS image picker state
+  const [vfsPickerOpen, setVfsPickerOpen] = useState(false);
+  const [vfsPickerTarget, setVfsPickerTarget] = useState<'picture' | 'banner' | null>(null);
+
+  // URL manual-entry state
+  const [showPictureUrlInput, setShowPictureUrlInput] = useState(false);
+  const [showBannerUrlInput, setShowBannerUrlInput] = useState(false);
+
+  const openVfsPicker = useCallback((target: 'picture' | 'banner') => {
+    setVfsPickerTarget(target);
+    setVfsPickerOpen(true);
+  }, []);
+
+  const handleVfsImageSelected = useCallback((path: string) => {
+    // Read the VFS file and convert to data URI so it can be uploaded to Blossom
+    if (!vfsPickerTarget) return;
+    const target = vfsPickerTarget;
+    setVfsPickerOpen(false);
+
+    // Read image and upload it via the upload function
+    const loadAndUpload = async () => {
+      try {
+        const imageData = await fs.readFile(path);
+        const extension = path.split('.').pop()?.toLowerCase() ?? 'png';
+        const mimeTypes: Record<string, string> = {
+          png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+          gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml',
+          bmp: 'image/bmp', ico: 'image/x-icon', avif: 'image/avif',
+        };
+        const mimeType = mimeTypes[extension] ?? 'image/png';
+        const blob = new Blob([imageData], { type: mimeType });
+        const filename = path.split('/').pop() ?? 'image';
+        const file = new File([blob], filename, { type: mimeType });
+        const tags = await uploadFile(file);
+        const url = tags[0]?.[1];
+        if (url) {
+          updateField(target, url);
+          toast({ title: target === 'picture' ? 'Icon uploaded' : 'Banner uploaded', description: 'Image uploaded from project files.' });
+        }
+      } catch (error) {
+        toast({
+          title: 'Upload failed',
+          description: error instanceof Error ? error.message : 'Failed to upload image.',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    loadAndUpload();
+  }, [vfsPickerTarget, fs, uploadFile, updateField, toast]);
 
   // Get the deployed URL from project deploy settings
   const deployedUrl = (() => {
@@ -511,6 +565,7 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
   }
 
   return (
+    <Fragment>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -582,11 +637,58 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
                   </div>
                 )}
               </div>
+              {/* Banner helper buttons */}
+              <div className="flex items-center gap-2 px-4 pt-1.5 pb-0">
+                <button
+                  type="button"
+                  onClick={e => { e.preventDefault(); openVfsPicker('banner'); }}
+                  disabled={isSaving || isUploading}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Browse project files
+                </button>
+                <span className="text-xs text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  onClick={() => setShowBannerUrlInput(v => !v)}
+                  disabled={isSaving}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  <Link className="h-3.5 w-3.5" />
+                  Enter URL
+                </button>
+                {formData.banner && (
+                  <>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <button
+                      type="button"
+                      onClick={() => { updateField('banner', ''); setShowBannerUrlInput(false); }}
+                      disabled={isSaving}
+                      className="flex items-center gap-1 text-xs text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      Remove
+                    </button>
+                  </>
+                )}
+              </div>
+              {showBannerUrlInput && (
+                <div className="px-4 pb-1">
+                  <Input
+                    value={formData.banner}
+                    onChange={e => updateField('banner', e.target.value)}
+                    placeholder="https://example.com/banner.jpg"
+                    disabled={isSaving}
+                    className="text-xs h-8"
+                  />
+                </div>
+              )}
 
               {/* Icon + Name/Description */}
               <div className="px-4 pb-4">
                 {/* Icon overlapping banner */}
-                <div className="-mt-10 mb-3">
+                <div className="-mt-10 mb-1">
                   <div className={`relative inline-block group cursor-pointer${submitted && !formData.picture ? ' ring-2 ring-destructive rounded-2xl' : ''}`} onClick={() => !isSaving && !isUploading && fileInputRef.current?.click()}>
                     <Avatar className="h-20 w-20 rounded-2xl border-4 border-background shadow-sm">
                       <AvatarImage src={formData.picture} alt={formData.name || 'App icon'} className="object-cover" />
@@ -602,6 +704,53 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
                     </div>
                   </div>
                 </div>
+                {/* Icon helper buttons */}
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={e => { e.preventDefault(); openVfsPicker('picture'); }}
+                    disabled={isSaving || isUploading}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Browse project files
+                  </button>
+                  <span className="text-xs text-muted-foreground">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowPictureUrlInput(v => !v)}
+                    disabled={isSaving}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                  >
+                    <Link className="h-3.5 w-3.5" />
+                    Enter URL
+                  </button>
+                  {formData.picture && (
+                    <>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <button
+                        type="button"
+                        onClick={() => { updateField('picture', ''); setShowPictureUrlInput(false); }}
+                        disabled={isSaving}
+                        className="flex items-center gap-1 text-xs text-destructive hover:text-destructive/80 transition-colors disabled:opacity-50"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
+                    </>
+                  )}
+                </div>
+                {showPictureUrlInput && (
+                  <div className="mb-2">
+                    <Input
+                      value={formData.picture}
+                      onChange={e => updateField('picture', e.target.value)}
+                      placeholder="https://example.com/icon.png"
+                      disabled={isSaving}
+                      className="text-xs h-8"
+                    />
+                  </div>
+                )}
 
                 {/* Name & Description */}
                 <div className="space-y-2">
@@ -892,5 +1041,14 @@ export function AppDialog({ projectId, open, onOpenChange }: AppDialogProps) {
         )}
       </DialogContent>
     </Dialog>
+
+    {/* VFS Image Picker dialog */}
+    <VFSImagePicker
+      open={vfsPickerOpen}
+      onOpenChange={setVfsPickerOpen}
+      rootPath={cwd}
+      onSelect={handleVfsImageSelected}
+    />
+    </Fragment>
   );
 }

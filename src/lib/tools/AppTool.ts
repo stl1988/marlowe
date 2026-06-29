@@ -12,6 +12,7 @@ interface AppToolParams {
   name?: string;
   about?: string;
   picture?: string;
+  banner?: string;
   website?: string;
   d?: string;
   supported_kinds?: string[];
@@ -31,13 +32,15 @@ export class AppTool implements Tool<AppToolParams> {
     'View or update the project\'s Nostr app (NIP-89 kind 31990). ' +
     'Use "view_app" to see the current app event. ' +
     'Use "update_app" to create or update the app event (you MUST call view_app first in this session before updating). ' +
-    'This publishes the event using the user\'s own Nostr signer.';
+    'This publishes the event using the user\'s own Nostr signer. ' +
+    'The NIP-89 spec supports both a "picture" (square icon) and a "banner" (wide background image) field in the app metadata. Always set both for a complete app listing.';
 
   readonly inputSchema = z.object({
     action: z.enum(['view_app', 'update_app']).describe('The action to perform.'),
     name: z.string().optional().describe('App name (required for update_app if creating new).'),
     about: z.string().optional().describe('Short description of the app.'),
     picture: z.string().optional().describe('URL to the app icon.'),
+    banner: z.string().optional().describe('URL to the app banner image (wide format, ~1024x500px recommended). Shown as a background image in the app listing. This is an important visual element - always include it when publishing an app.'),
     website: z.string().optional().describe('App website URL.'),
     d: z.string().optional().describe('Unique identifier (d-tag) for the app. Defaults to the project ID. Cannot be changed after first publish.'),
     supported_kinds: z.array(z.string()).optional().describe('Array of event kind numbers this app handles.'),
@@ -155,6 +158,7 @@ export class AppTool implements Tool<AppToolParams> {
             name: metadata.name ?? null,
             about: metadata.about ?? null,
             picture: metadata.picture ?? null,
+            banner: metadata.banner ?? null,
             website: metadata.website ?? null,
           },
           d_tag: dTag,
@@ -209,6 +213,7 @@ export class AppTool implements Tool<AppToolParams> {
         name: args.name,
         about: args.about,
         picture: args.picture,
+        banner: args.banner,
         website: args.website,
         dTag,
         supportedKinds: args.supported_kinds,
@@ -247,6 +252,7 @@ export class AppTool implements Tool<AppToolParams> {
           id: event.id,
           pubkey: event.pubkey,
           name: args.name!.trim(),
+          banner: args.banner ?? null,
           message: existingConfig
             ? `App "${args.name!.trim()}" has been updated on Nostr.`
             : `App "${args.name!.trim()}" has been published to Nostr.`,
