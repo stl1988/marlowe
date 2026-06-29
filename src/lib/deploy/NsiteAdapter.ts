@@ -1,4 +1,5 @@
 import type { NostrSigner } from '@nostrify/nostrify';
+import { signEventWithRetry } from './signerUtils';
 import mime from 'mime';
 import { nip19 } from 'nostr-tools';
 import type { JSRuntimeFS } from '../JSRuntime';
@@ -72,7 +73,7 @@ async function createBatchUploadAuth(
     ],
     content: 'Upload blobs',
   };
-  const signed = await signer.signEvent(template);
+  const signed = await signEventWithRetry(signer, template);
   return `Nostr ${btoa(JSON.stringify(signed))}`;
 }
 
@@ -393,7 +394,7 @@ export class NsiteAdapter implements DeployAdapter {
       tags.push(['source', this.sourceUrl]);
     }
 
-    const manifestEvent = await this.signer.signEvent({
+    const manifestEvent = await signEventWithRetry(this.signer, {
       kind: manifestKind,
       content: '',
       created_at: Math.floor(Date.now() / 1000),

@@ -4,6 +4,7 @@ import { N64 } from '@nostrify/nostrify/utils';
 import type { JSRuntimeFS } from '../JSRuntime';
 import type { DeployAdapter, DeployOptions, DeployResult, ShakespeareDeployConfig } from './types';
 import { proxyUrl } from '../proxyUrl';
+import { signEventWithRetry } from './signerUtils';
 
 /**
  * Shakespeare Deploy Adapter
@@ -62,7 +63,7 @@ export class ShakespeareAdapter implements DeployAdapter {
 
     // Create NIP-98 token for authentication
     const template = await NIP98.template(request);
-    const event = await this.signer.signEvent(template);
+    const event = await signEventWithRetry(this.signer, template);
     const token = N64.encodeEvent(event);
 
     // Add the Authorization header
