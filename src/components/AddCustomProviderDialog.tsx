@@ -169,7 +169,7 @@ export function AddCustomProviderDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[min(700px,85dvh)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('addCustomProvider')}</DialogTitle>
           <DialogDescription>

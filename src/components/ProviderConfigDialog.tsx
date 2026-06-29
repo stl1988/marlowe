@@ -81,7 +81,7 @@ export function ProviderConfigDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[min(700px,85dvh)] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <ExternalFavicon
