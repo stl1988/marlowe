@@ -33,7 +33,7 @@ export function DeployButton({ projectId, projectName, className, disabled }: De
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-96"
+        className="w-96 max-h-[min(600px,80dvh)] overflow-y-auto"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DeploySteps
