@@ -280,6 +280,9 @@ export default function Index() {
               <h1 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {t('buildApps')}
               </h1>
+              {import.meta.env.VERSION && (
+                <p className="text-xs text-muted-foreground/50 mt-1">v{import.meta.env.VERSION}</p>
+              )}
             </div>
 
             <div>
@@ -385,12 +388,7 @@ export default function Index() {
           <AppShowcase />
         </div>
 
-        {/* Version Display */}
-        {import.meta.env.VERSION && (
-          <div className="text-center text-xs text-muted-foreground/60 pt-8 pb-4">
-            v{import.meta.env.VERSION}
-          </div>
-        )}
+
       </AppLayout>
 
       {/* Onboarding Dialog */}

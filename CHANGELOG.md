@@ -1,5 +1,31 @@
 # Changelog
 
+## [9.14.0] - 2026-06-30
+
+### Added
+- **Marlowe fork**: Full rebrand from Shakespeare — teal/amber color scheme, Marlowe logo (teal quill), updated system prompt, new `marlowe-badge.svg` for "Edit with Marlowe" buttons
+- `public/llms.txt` — LLM-friendly project documentation following the llms.txt spec
+- Version number displayed in the homepage header, auto-updating from `package.json`
+- Status bars in project view showing storage usage and AI context window fill
+- Root site support for nsite deployment (NIP-5A kind 15128) alongside named sites (kind 35128)
+- Additional Instructions field in AI Settings — user-controlled instructions appended to every system prompt, never overwritten by updates
+- `wss://purplepag.es` added as default read relay for reliable Nostr profile resolution
+- Persistent storage request on Android to reduce risk of IndexedDB eviction
+
+### Changed
+- System prompt rebranded: AI introduces itself as Marlowe, describes the platform as a Shakespeare fork, removed "best coding platform" claim, softened the "NEVER suggest other tools" directive
+- Deploy popover and provider config dialogs now cap height with scroll so buttons are always visible on small screens
+- Showcase author profiles now use `useAuthor` per card with `retry: 3` (matching Shakespeare) and `JSON.parse` instead of `NSchema.metadata()` for Zod v3 compatibility
+
+### Fixed
+- `updateField` TDZ crash in AppDialog when opening projects
+- `toJSONSchema()` TypeError — replaced with `zod-to-json-schema` for Zod v3 compatibility
+- NIP-07 signer extension "Receiving end does not exist" error on first deploy — now retries automatically
+- Static OG meta tags added to `index.html` so social media scrapers see correct og:image
+- VFS image display in code view (ENOENT) — now constructs absolute path correctly
+- Browser tab title no longer flickers back to "Shakespeare" — removed per-page `useSeoMeta` overrides
+- Showcase "Anonymous" author — fixed relay query and Zod parsing
+
 ## [9.14.0] - 2026-06-05
 
 ### Added

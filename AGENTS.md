@@ -1,6 +1,9 @@
 # Agent Rules
 
 - ALWAYS commit after you finish your turn. No exceptions. Don't ask for permission, just do it.
+- After EVERY code change, you MUST update `public/llms.txt` to reflect any new features, bug fixes, architectural changes, or updated links. Keep it accurate and current.
+- After EVERY code change, you MUST update `CHANGELOG.md`. Add an entry under the current version (found in `package.json`) describing what changed. Use the keep-a-changelog format: `### Added`, `### Changed`, `### Fixed`. If the version already has an entry, append to it. If not, create a new `## [x.y.z] - YYYY-MM-DD` section at the top.
+- The version number shown in the app header (homepage) updates automatically from `package.json` via `import.meta.env.VERSION` — no manual UI changes needed when bumping the version.
 
 # Shakespeare - AI-Powered App Builder
 

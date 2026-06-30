@@ -1,0 +1,75 @@
+# Marlowe
+
+> Marlowe is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+
+Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (nsite, Shakespeare Deploy, Netlify, Vercel, Cloudflare, Railway).
+
+## What Makes Marlowe Different from Shakespeare
+
+Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.com/soapbox-pub/shakespeare). The two projects share the same architecture and most of the same codebase. Key differences:
+
+- **Branding**: Marlowe uses a teal/amber color scheme instead of Shakespeare's purple. The logo is a teal quill with a cyan spark.
+- **Deployment URL**: Marlowe is deployed at https://marlowe.shakespeare.wtf and as an nsite at https://47h1rs70oqaspur8bichfzalg0wnassb8d7tslfacl7hwyaxhkmarlowe.nsite.lol
+- **Nostr-first**: Marlowe defaults to nsite (NIP-5A kind 15128/35128) as the primary deployment target, supporting both root sites and named sites.
+- **System prompt**: The AI assistant introduces itself as "Marlowe" and describes the platform as a Shakespeare fork. Projects built with Marlowe are branded "Vibed with Marlowe".
+- **Badge**: Marlowe ships its own teal edit badge (`/marlowe-badge.svg`) for use in READMEs and project footers.
+- **Additional Instructions**: Users can add personal AI instructions (Settings → AI) that survive system prompt updates — unlike the editable system prompt which can be restored to the Marlowe default.
+- **Status bars**: Two thin progress bars in the project view show storage usage and AI context window fill at a glance.
+- **Bug fixes over upstream**: Several bugs present in Shakespeare at fork time have been fixed, including a TDZ crash in AppDialog, a `toJSONSchema` Zod v3 incompatibility, signer extension retry logic, and showcase author profile resolution.
+
+## Architecture
+
+- **Frontend**: React 18, TypeScript, Vite, TailwindCSS 3, shadcn/ui, Radix UI
+- **Nostr**: @nostrify/nostrify, @nostrify/react, nostr-tools — full NIP-07/NIP-46 signer support
+- **Storage**: LightningFS (IndexedDB-backed virtual filesystem), isomorphic-git
+- **Build pipeline**: esbuild-wasm (in-browser bundler), Tailwind CSS CDN for previews
+- **AI**: OpenAI-compatible API, supports any provider with an OpenAI-compatible endpoint
+- **Deployment**: nsite (Nostr/Blossom), Shakespeare Deploy, Netlify, Vercel, Cloudflare Workers, Deno Deploy, Railway
+
+## Project Structure
+
+- `src/lib/system.ts` — AI system prompt template (Nunjucks) with Marlowe branding
+- `src/lib/deploy/NsiteAdapter.ts` — nsite v2 deployment (kind 15128 root / kind 35128 named)
+- `src/lib/deploy/ShakespeareAdapter.ts` — Shakespeare Deploy via NIP-98 auth
+- `src/lib/SessionManager.ts` — AI session lifecycle, tool execution, streaming
+- `src/components/Shakespeare/` — Core UI: ChatPane, PreviewPane, FileEditor, FileTree
+- `src/components/StatusBars.tsx` — Storage + context window progress bars
+- `src/hooks/useAppSubmissions.ts` — Homepage app showcase (kind 31990, NIP-89)
+- `src/hooks/useAuthor.ts` — Nostr kind 0 profile resolution
+- `public/marlowe.svg` — App icon (teal quill)
+- `public/marlowe-badge.svg` — "Edit with Marlowe" badge (teal, ✒️)
+- `public/badge.svg` — "Edit with Shakespeare" badge (purple, 🎭)
+- `public/llms.txt` — This file
+
+## Nostr Integration
+
+Marlowe is deeply integrated with the Nostr protocol:
+
+- **Login**: NIP-07 browser extension, NIP-46 remote signer (bunker/QR), or nsec import
+- **Git**: ngit (NIP-34) for decentralised repository hosting via nostr:// URIs
+- **Deployment**: nsite (NIP-5A) for decentralised static website hosting on Blossom servers
+- **App publishing**: NIP-89 kind 31990 app descriptor events
+- **Payments**: NIP-57 zaps, NWC (Nostr Wallet Connect) for Lightning payments
+- **App showcase**: NIP-89 kind 31990 events curated via NIP-51 follow sets
+
+## Default Relays
+
+- wss://relay.ditto.pub (read/write)
+- wss://relay.damus.io (read/write)
+- wss://relay.primal.net (read/write)
+- wss://purplepag.es (read-only — profile relay for kind 0 resolution)
+
+## Links
+
+- [Homepage](https://marlowe.shakespeare.wtf): Live deployment on shakespeare.wtf
+- [nsite deployment](https://47h1rs70oqaspur8bichfzalg0wnassb8d7tslfacl7hwyaxhkmarlowe.nsite.lol): Decentralised nsite deployment
+- [Source code](https://github.com/stl1988/marlowe): GitHub repository
+- [Upstream Shakespeare](https://shakespeare.diy): The original project Marlowe is forked from
+- [Shakespeare source](https://gitlab.com/soapbox-pub/shakespeare): Upstream source on GitLab
+- [Changelog](/CHANGELOG.md): Full version history
+
+## Optional
+
+- [CHANGELOG.md](/CHANGELOG.md): Detailed changelog for all versions
+- [manifest.webmanifest](/manifest.webmanifest): PWA manifest with app metadata
+- [NIP-5A](https://github.com/nostr-protocol/nips/blob/master/5A.md): The nsite static website hosting NIP implemented in Marlowe
