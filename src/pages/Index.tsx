@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import pkg from '../../package.json';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useProjectsManager } from '@/hooks/useProjectsManager';
@@ -280,9 +281,7 @@ export default function Index() {
               <h1 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {t('buildApps')}
               </h1>
-              {import.meta.env.VERSION && (
-                <p className="text-xs text-muted-foreground/50 mt-1">v{import.meta.env.VERSION}</p>
-              )}
+              <p className="text-xs text-muted-foreground/50 mt-1">v{pkg.version}</p>
             </div>
 
             <div>
