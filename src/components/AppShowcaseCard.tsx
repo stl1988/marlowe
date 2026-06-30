@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ExternalLink, User } from 'lucide-react';
 import type { AppSubmission } from '@/hooks/useAppSubmissions';
+import { useAuthor } from '@/hooks/useAuthor';
 import { nip19 } from 'nostr-tools';
 
 interface AppShowcaseCardProps {
@@ -14,8 +15,7 @@ export function AppShowcaseCard({ app }: AppShowcaseCardProps) {
   const [bannerError, setBannerError] = useState(false);
   const [iconError, setIconError] = useState(false);
 
-  // Author metadata is pre-fetched in a single batch query by useAppSubmissions
-  const authorMetadata = app.authorMetadata;
+  const { data: authorData } = useAuthor(app.pubkey);
   const authorNpub = nip19.npubEncode(app.pubkey);
 
   return (
@@ -72,10 +72,10 @@ export function AppShowcaseCard({ app }: AppShowcaseCardProps) {
         {/* Author */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-5 h-5 rounded-full overflow-hidden bg-muted flex-shrink-0">
-            {authorMetadata?.picture ? (
+            {authorData?.metadata?.picture ? (
               <img
-                src={authorMetadata.picture}
-                alt={authorMetadata.name || 'Author'}
+                src={authorData.metadata.picture}
+                alt={authorData.metadata.name || 'Author'}
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -92,7 +92,7 @@ export function AppShowcaseCard({ app }: AppShowcaseCardProps) {
               rel="noopener noreferrer"
               className="text-primary hover:text-primary/80 transition-colors hover:underline"
             >
-              {authorMetadata?.name || authorMetadata?.display_name || authorNpub.slice(0, 12) + '…'}
+              {authorData?.metadata?.name || authorData?.metadata?.display_name || 'Anonymous'}
             </a>
           </span>
         </div>
