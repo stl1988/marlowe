@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.1.1] - 2026-06-30
+
+### Fixed
+- **ngit push broken**: `git push` to ngit-grasp servers (`git.shakespeare.diy`, `relay.ngit.dev`) now works again. These servers don't advertise the `report-status` git capability and return an empty body on a successful push. isomorphic-git unconditionally parses `"unpack ok"` from the response and threw `ParseError: Expected "unpack ok" or "unpack [error message]" but received ""`. The `GitHttp` client now detects an empty receive-pack response on a 200 and injects a synthetic `000eunpack ok\n0000` pkt-line reply, satisfying the parser while preserving real error responses unchanged.
+
 ## [10.1.0] - 2026-06-30
 
 ### Added

@@ -1130,6 +1130,49 @@ class GitHttp implements HttpClient {
 
     const response = await this.fetch(target, init);
     const headers = Object.fromEntries(response.headers.entries());
+
+    // Workaround for servers (e.g. ngit-grasp / git.shakespeare.diy) that do not
+    // advertise or honour the `report-status` capability but return an empty body
+    // on a successful git-receive-pack (push).  isomorphic-git unconditionally
+    // tries to parse "unpack ok" from the receive-pack response body and throws
+    //   ParseError: Expected "unpack ok" or "unpack [error message]" but received ""
+    // when the body is empty.  We detect this case and synthesise a minimal
+    // pkt-line success response so isomorphic-git's parser is satisfied.
+    const isReceivePack = request.url.endsWith('/git-receive-pack');
+    if (isReceivePack && response.status === 200 && response.body) {
+      const rawBody = await collectToUint8Array(readableStreamToAsyncIterator(response.body));
+
+      // Check if the body is empty, or consists only of a flush packet (0000),
+      // or does not already start with a valid pkt-line unpack response.
+      const bodyText = new TextDecoder().decode(rawBody);
+      const looksLikeUnpackResponse = bodyText.includes('unpack ok') || bodyText.includes('unpack ');
+
+      if (!looksLikeUnpackResponse && (rawBody.byteLength === 0 || rawBody.byteLength <= 4)) {
+        // Inject a synthetic "unpack ok" pkt-line response:
+        //   000eunpack ok\n  (4-char hex length 14 = 0x0e, payload = "unpack ok\n" = 10 bytes)
+        //   0000             (flush packet)
+        const synthetic = new TextEncoder().encode('000eunpack ok\n0000');
+        return {
+          url: response.url,
+          method,
+          statusCode: response.status,
+          statusMessage: response.statusText,
+          body: uint8ArrayToAsyncIterator(synthetic),
+          headers,
+        };
+      }
+
+      // Body was non-empty — convert back to async iterator for isomorphic-git
+      return {
+        url: response.url,
+        method,
+        statusCode: response.status,
+        statusMessage: response.statusText,
+        body: uint8ArrayToAsyncIterator(rawBody),
+        headers,
+      };
+    }
+
     const body = response.body ? readableStreamToAsyncIterator(response.body) : undefined;
 
     return {
@@ -1160,6 +1203,26 @@ async function collectToUint8Array(
     offset += c.byteLength;
   }
   return out;
+}
+
+// Wrap a single Uint8Array as a one-shot async iterator (used to re-emit
+// a buffered HTTP response body back to isomorphic-git)
+function uint8ArrayToAsyncIterator(data: Uint8Array): AsyncIterableIterator<Uint8Array> {
+  let done = false;
+  return {
+    async next() {
+      if (done) return { value: undefined, done: true };
+      done = true;
+      return { value: data, done: false };
+    },
+    async return() {
+      done = true;
+      return { value: undefined, done: true };
+    },
+    [Symbol.asyncIterator]() {
+      return this;
+    },
+  };
 }
 
 // Portable async iterator over a ReadableStream (works even if
