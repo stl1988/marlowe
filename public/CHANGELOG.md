@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.0.1] - 2026-06-30
+
+### Changed
+- AGENTS.md: added rule to bump `package.json` version after every code change (patch for fixes, minor for features, major only on explicit request)
+
 ## [10.0.0] - 2026-06-30
 
 ### Changed
