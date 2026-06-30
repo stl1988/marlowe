@@ -141,17 +141,22 @@ export function useAppSubmissions() {
       // 5. Batch-fetch all author profiles in a single query
       const uniquePubkeys = [...new Set([...latestMap.values()].map(e => e.pubkey))];
       const authorMetadataMap = new Map<string, NostrMetadata>();
+      // Track latest created_at per pubkey so we always use the most recent profile
+      const authorLatestAt = new Map<string, number>();
       if (uniquePubkeys.length > 0) {
         try {
           const profileEvents = await nostr.query(
-            [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length }],
+            // Use a generous limit: relays may return multiple kind 0 per pubkey
+            [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length * 10 }],
             { signal: AbortSignal.timeout(5000) },
           );
           for (const profileEvent of profileEvents) {
-            if (authorMetadataMap.has(profileEvent.pubkey)) continue; // keep newest
+            const existing = authorLatestAt.get(profileEvent.pubkey) ?? -1;
+            if (profileEvent.created_at <= existing) continue; // skip older duplicates
             try {
               const metadata = n.json().pipe(n.metadata()).parse(profileEvent.content);
               authorMetadataMap.set(profileEvent.pubkey, metadata);
+              authorLatestAt.set(profileEvent.pubkey, profileEvent.created_at);
             } catch {
               // ignore unparseable profiles
             }
