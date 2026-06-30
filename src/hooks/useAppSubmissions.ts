@@ -1,7 +1,8 @@
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import { nip19 } from 'nostr-tools';
-import type { NostrEvent, NostrFilter, NRelay, NPool } from '@nostrify/nostrify';
+import type { NostrEvent, NostrFilter, NostrMetadata, NRelay, NPool } from '@nostrify/nostrify';
+import { NSchema as n } from '@nostrify/nostrify';
 import { useAppContext } from '@/hooks/useAppContext';
 import { NostrURI } from '@/lib/NostrURI';
 
@@ -12,6 +13,8 @@ export interface AppSubmission extends NostrEvent {
   description: string;
   appIconUrl: string;
   bannerUrl: string;
+  /** Author profile metadata fetched alongside app events */
+  authorMetadata?: NostrMetadata;
 }
 
 /**
@@ -135,7 +138,30 @@ export function useAppSubmissions() {
         }
       }
 
-      // 5. Shape into AppSubmission objects
+      // 5. Batch-fetch all author profiles in a single query
+      const uniquePubkeys = [...new Set([...latestMap.values()].map(e => e.pubkey))];
+      const authorMetadataMap = new Map<string, NostrMetadata>();
+      if (uniquePubkeys.length > 0) {
+        try {
+          const profileEvents = await nostr.query(
+            [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length }],
+            { signal: AbortSignal.timeout(5000) },
+          );
+          for (const profileEvent of profileEvents) {
+            if (authorMetadataMap.has(profileEvent.pubkey)) continue; // keep newest
+            try {
+              const metadata = n.json().pipe(n.metadata()).parse(profileEvent.content);
+              authorMetadataMap.set(profileEvent.pubkey, metadata);
+            } catch {
+              // ignore unparseable profiles
+            }
+          }
+        } catch {
+          // Profile fetch failure is non-fatal — cards will show fallback
+        }
+      }
+
+      // 6. Shape into AppSubmission objects
       const submissions: AppSubmission[] = [];
       for (const event of latestMap.values()) {
         try {
@@ -176,6 +202,7 @@ export function useAppSubmissions() {
             description,
             appIconUrl,
             bannerUrl,
+            authorMetadata: authorMetadataMap.get(event.pubkey),
           });
         } catch (error) {
           console.warn('Failed to parse app submission:', error);
