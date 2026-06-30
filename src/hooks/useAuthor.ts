@@ -12,10 +12,14 @@ export function useAuthor(pubkey: string | undefined) {
         return {};
       }
 
-      const [event] = await nostr.query(
+      const events = await nostr.query(
         [{ kinds: [0], authors: [pubkey!], limit: 1 }],
-        { signal: AbortSignal.any([signal, AbortSignal.timeout(1500)]) },
+        { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) },
       );
+
+      console.log(`[useAuthor] pubkey=${pubkey.slice(0, 8)} got ${events.length} events`);
+
+      const event = events[0];
 
       if (!event) {
         throw new Error('No event found');
@@ -23,11 +27,14 @@ export function useAuthor(pubkey: string | undefined) {
 
       try {
         const metadata = n.json().pipe(n.metadata()).parse(event.content);
+        console.log(`[useAuthor] resolved name=${metadata.name} for ${pubkey.slice(0, 8)}`);
         return { metadata, event };
       } catch {
         return { event };
       }
     },
     retry: 3,
+    retryDelay: 1000,
+    staleTime: 60000,
   });
 }
