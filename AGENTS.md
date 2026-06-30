@@ -59,6 +59,12 @@ Shakespeare provides AI agents with specialized tools for project development (n
 - **NostrGenerateKindTool**: Generate unused Nostr event kind numbers
 - **NostrEncodeTool**: Encode hex values into NIP-19 bech32 entities (npub, note, nprofile, nevent, naddr)
 - **NostrDecodeTool**: Decode NIP-19 bech32 entities into hex and structured data
+- **NostrReadCustomNipTool**: Read a custom Nostr NIP published as a kind 30817 addressable event on Nostr relays (pass an naddr1 or pubkey:d-tag)
+- **ReadBipTool**: Read a Bitcoin BIP (Bitcoin Improvement Proposal) specification from GitHub
+- **ReadBoltTool**: Read a Lightning Network BOLT (Basis of Lightning Technology) specification from GitHub
+- **ReadBudTool**: Read a Blossom BUD (Blossom Upgrade Document) specification from GitHub
+- **ReadMipTool**: Read a Marmot MIP (Marmot Implementation Proposal) specification from GitHub
+- **ReadNutTool**: Read a Cashu NUT (Notation, Usage, and Terminology) specification from GitHub
 - **BlossomUploadTool**: Upload files from the project to Blossom media hosting, returns a public URL
 - **ReadConsoleMessagesTool**: Read console messages from project preview with filtering capabilities
 

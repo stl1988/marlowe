@@ -3,6 +3,12 @@
 ## [9.14.0] - 2026-06-30
 
 ### Added
+- **NostrReadCustomNipTool**: AI agents can now read kind 30817 custom NIPs published on Nostr by passing an `naddr1` bech32 or a `pubkey:d-tag` pair
+- **ReadBipTool**: AI agents can read Bitcoin BIP (Bitcoin Improvement Proposal) specifications from GitHub (`bitcoin/bips`)
+- **ReadBoltTool**: AI agents can read Lightning Network BOLT (Basis of Lightning Technology) specifications from GitHub (`lightning/bolts`)
+- **ReadBudTool**: AI agents can read Blossom BUD (Blossom Upgrade Document) specifications from GitHub (`hzrd149/blossom/buds`)
+- **ReadMipTool**: AI agents can read Marmot MIP (Marmot Implementation Proposal) specifications from GitHub (`marmot-protocol/marmot`)
+- **ReadNutTool**: AI agents can read Cashu NUT (Notation, Usage, and Terminology) specifications from GitHub (`cashubtc/nuts`)
 - **Marlowe fork**: Full rebrand from Shakespeare — teal/amber color scheme, Marlowe logo (teal quill), updated system prompt, new `marlowe-badge.svg` for "Edit with Marlowe" buttons
 - `public/llms.txt` — LLM-friendly project documentation following the llms.txt spec
 - Version number displayed in the homepage header, auto-updating from `package.json`

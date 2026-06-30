@@ -50,6 +50,12 @@ import { createMCPTools } from '@/lib/tools/MCPTool';
 import { TodoWriteTool } from '@/lib/tools/TodoWriteTool';
 import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
+import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
+import { ReadBipTool } from '@/lib/tools/ReadBipTool';
+import { ReadBoltTool } from '@/lib/tools/ReadBoltTool';
+import { ReadBudTool } from '@/lib/tools/ReadBudTool';
+import { ReadMipTool } from '@/lib/tools/ReadMipTool';
+import { ReadNutTool } from '@/lib/tools/ReadNutTool';
 import { ProjectPreviewConsoleError, clearConsoleMessages } from '@/lib/consoleMessages';
 import { toolToOpenAI } from '@/lib/tools/openai-adapter';
 import { Tool } from '@/lib/tools/Tool';
@@ -223,6 +229,12 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
       nostr_publish_events: new NostrPublishEventsTool(),
       nostr_encode: new NostrEncodeTool(),
       nostr_decode: new NostrDecodeTool(),
+      nostr_read_custom_nip: new NostrReadCustomNipTool(),
+      read_bip: new ReadBipTool(),
+      read_bolt: new ReadBoltTool(),
+      read_bud: new ReadBudTool(),
+      read_mip: new ReadMipTool(),
+      read_nut: new ReadNutTool(),
       blossom_upload: new BlossomUploadTool(fs, cwd, user?.signer),
       shell: new ShellTool(fs, cwd, git, config.corsProxy, user?.signer),
       read_console_messages: new ReadConsoleMessagesTool(),
