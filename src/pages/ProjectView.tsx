@@ -32,6 +32,7 @@ import { useGitAutosync } from '@/hooks/useGitAutosync';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { useProjectSessionStatus } from '@/hooks/useProjectSessionStatus';
+import { StatusBars } from '@/components/StatusBars';
 
 export function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -250,6 +251,9 @@ export function ProjectView() {
               )}
             </div>
           </div>
+          {project && (
+            <StatusBars projectId={project.id} className="border-b border-border/30" />
+          )}
         </header>
 
         {/* Mobile Sidebar Overlay */}
@@ -487,6 +491,9 @@ export function ProjectView() {
                     </div>
                   </div>
                 </div>
+                {project && (
+                  <StatusBars projectId={project.id} className="border-b border-border/30 flex-shrink-0" />
+                )}
 
                 {/* Chat Content */}
                 <div className="flex-1 overflow-hidden">
