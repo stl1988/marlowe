@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import { Square, ArrowUp, PlusSquare, AlertTriangle } from 'lucide-react';
+import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
 
 export interface SlashCommand {
@@ -38,6 +38,8 @@ interface ChatInputProps {
   onDrop: (e: React.DragEvent) => void;
   slashCommands?: SlashCommand[];
   onNewChat?: () => void;
+  economyMode?: boolean;
+  onToggleEconomyMode?: () => void;
 }
 
 export const ChatInput = memo(function ChatInput({
@@ -63,6 +65,8 @@ export const ChatInput = memo(function ChatInput({
   onDrop,
   slashCommands = [],
   onNewChat,
+  economyMode = false,
+  onToggleEconomyMode,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const [input, setInput] = useState('');
@@ -338,6 +342,38 @@ export const ChatInput = memo(function ChatInput({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{t('totalCostSession')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Economy Mode Toggle */}
+          {onToggleEconomyMode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onToggleEconomyMode}
+                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                      economyMode
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                    aria-pressed={economyMode}
+                    aria-label="Toggle economy mode"
+                  >
+                    <Leaf className="h-3.5 w-3.5" />
+                    {economyMode && <span>Eco</span>}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium mb-1">{economyMode ? 'Economy Mode ON' : 'Economy Mode OFF'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {economyMode
+                      ? 'AI will minimise tool calls, skip unnecessary reads, and keep replies short to save credits.'
+                      : 'Click to enable credit-saving mode. The AI will be instructed to use fewer tool calls and write shorter replies.'}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -399,6 +399,31 @@ Translation keys are organized by functionality:
 6. Keep translations concise and consistent with existing patterns
 7. Test the new language thoroughly to ensure proper display across all components
 
+## Economy Mode
+
+Marlowe includes a per-project **Economy Mode** that helps users control AI token costs. When enabled, credit-saving instructions are appended to the system prompt on every turn.
+
+### Behaviour when Economy Mode is ON
+
+The AI is instructed to:
+- Plan the minimal set of tool calls needed before acting
+- Use `offset`/`limit` when reading files to avoid loading entire files unnecessarily
+- Avoid speculative or "just-in-case" file reads — use grep/glob first to locate the target
+- Batch all related code changes into a single turn
+- Only trigger `build_project` when explicitly needed
+- Commit exactly once at the end of a turn (no intermediate commits)
+- Keep prose responses short and direct — no preambles or postambles
+
+### Where the toggle lives
+
+- **Chat input bar**: 🌿 leaf icon button — visible on every turn, toggles immediately, label "Eco" shown when active
+- **Project Details dialog**: Switch control with description — accessible via the project title menu
+- **Homepage (new project)**: Leaf button in the prompt input bar — sets the *default* for newly created projects (saved in localStorage as `marlowe-default-economy-mode`)
+
+### Storage
+
+Economy mode is persisted per-project in `.git/shakespeare/settings.json` as `{ "economyMode": true }`. The `DotAI` class exposes `readEconomyMode()` and `writeEconomyMode(enabled)` methods. The `SessionManager` reads this file before building the system prompt on each generation step.
+
 ## "Vibed with MKStack"
 
 When building the site for the first time, include "Vibed with MKStack" somewhere in the UI, linked to this URL: https://soapbox.pub/mkstack

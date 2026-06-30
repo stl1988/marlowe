@@ -50,6 +50,7 @@ import { createMCPTools } from '@/lib/tools/MCPTool';
 import { TodoWriteTool } from '@/lib/tools/TodoWriteTool';
 import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
+import { useEconomyMode } from '@/hooks/useEconomyMode';
 import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
 import { ReadBipTool } from '@/lib/tools/ReadBipTool';
 import { ReadBoltTool } from '@/lib/tools/ReadBoltTool';
@@ -114,6 +115,9 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isStuck, setIsStuck] = useState(false);
   const [aiError, setAIError] = useState<Error | null>(null);
+
+  // Economy mode — per-project credit-saving toggle
+  const { economyMode, toggleEconomyMode } = useEconomyMode(projectId);
   const [templateInfo, setTemplateInfo] = useState<{ name: string; description: string; url: string } | null>(null);
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
   const [showToolsDialog, setShowToolsDialog] = useState(false);
@@ -990,6 +994,8 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         onDrop={handleDrop}
         slashCommands={slashCommands}
         onNewChat={() => { internalStartNewSession(); onNewChat(); }}
+        economyMode={economyMode}
+        onToggleEconomyMode={toggleEconomyMode}
       />
 
       {/* Onboarding Dialog */}

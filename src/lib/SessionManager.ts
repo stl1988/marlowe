@@ -302,6 +302,15 @@ export class SessionManager {
         const commits = await this.git.log({ dir: cwd });
         const settings = this.getSettings();
 
+        // Read economy mode setting for this project
+        let economyMode = false;
+        try {
+          const dotaiForEconomy = new DotAI(this.fs, cwd);
+          economyMode = await dotaiForEconomy.readEconomyMode();
+        } catch {
+          // Default to false if reading fails
+        }
+
         const systemPrompt = await makeSystemPrompt({
           cwd,
           fs: this.fs,
@@ -317,6 +326,7 @@ export class SessionManager {
           model: modelInfo,
           provider: providerInfo,
           imageModel: settings.imageModel,
+          economyMode,
         });
 
         // Strip image_url parts from all user messages except the last one.

@@ -395,6 +395,48 @@ export class DotAI {
   }
 
   /**
+   * Read the economy mode setting from .git/shakespeare/settings.json.
+   * @returns true if economy mode is enabled, false otherwise (default: false)
+   */
+  async readEconomyMode(): Promise<boolean> {
+    try {
+      const settingsPath = join(this.workingDir, ".git", "shakespeare", "settings.json");
+      const content = await this.fs.readFile(settingsPath, "utf8");
+      const data = JSON.parse(content);
+      return data?.economyMode === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Write the economy mode setting to .git/shakespeare/settings.json.
+   * @param enabled Whether economy mode should be enabled
+   */
+  async writeEconomyMode(enabled: boolean): Promise<void> {
+    const shakespeareDir = join(this.workingDir, ".git", "shakespeare");
+    const settingsPath = join(shakespeareDir, "settings.json");
+
+    try {
+      await this.fs.mkdir(shakespeareDir, { recursive: true });
+
+      // Read existing settings first to preserve other keys
+      let existing: Record<string, unknown> = {};
+      try {
+        const content = await this.fs.readFile(settingsPath, "utf8");
+        existing = JSON.parse(content);
+      } catch {
+        // No existing settings, start fresh
+      }
+
+      const updated = { ...existing, economyMode: enabled };
+      await this.fs.writeFile(settingsPath, JSON.stringify(updated, null, 2) + "\n");
+    } catch (error) {
+      console.warn(`Failed to write .git/shakespeare/settings.json: ${error}`);
+    }
+  }
+
+  /**
    * Read app config from .git/shakespeare/app.json file.
    * Stores the Nostr "a" coordinate for the project's kind 31990 app event.
    * @returns App config object or null if not found or invalid

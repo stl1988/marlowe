@@ -21,9 +21,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ModelSelector } from '@/components/ModelSelector';
 import { FileAttachment } from '@/components/ui/file-attachment';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Leaf } from 'lucide-react';
 import { ShakespeareLogo } from '@/components/ShakespeareLogo';
 import { AppShowcase } from '@/components/AppShowcase';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DotAI } from '@/lib/DotAI';
 export default function Index() {
   const { t } = useTranslation();
   const [prompt, setPrompt] = useState('');
@@ -49,6 +52,7 @@ export default function Index() {
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [quillyError, setQuillyError] = useState<Error | null>(null);
+  const [defaultEconomyMode, setDefaultEconomyMode] = useLocalStorage('marlowe-default-economy-mode', false);
 
   // Check if any providers are configured (only valid after settings are loaded)
   const hasProvidersConfigured = !isLoadingSettings && settings.providers.length > 0;
@@ -248,6 +252,11 @@ export default function Index() {
       };
       await dotAI.setHistory(sessionName, [initialMessage]);
 
+      // Apply the default economy mode setting to the new project
+      if (defaultEconomyMode) {
+        await dotAI.writeEconomyMode(true);
+      }
+
       // Clear attached files after successful creation
       setAttachedFiles([]);
 
@@ -345,6 +354,36 @@ export default function Index() {
                     disabled={isLoadingSettings || isCreating || isGeneratingInfo}
                     multiple={true}
                   />
+
+                  {/* Economy Mode Toggle */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => setDefaultEconomyMode(!defaultEconomyMode)}
+                          className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                            defaultEconomyMode
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          }`}
+                          aria-pressed={defaultEconomyMode}
+                          aria-label="Toggle default economy mode for new projects"
+                        >
+                          <Leaf className="h-3.5 w-3.5" />
+                          {defaultEconomyMode && <span>Eco</span>}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-medium mb-1">{defaultEconomyMode ? 'Economy Mode ON (default)' : 'Economy Mode OFF (default)'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {defaultEconomyMode
+                            ? 'New projects will start with economy mode enabled. The AI will minimise token usage and write shorter replies.'
+                            : 'Click to enable economy mode by default for new projects. Saves credits by limiting AI tool calls and shortening replies.'}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
 
                   {/* Model Selector - always show to allow configuration */}
                   <div className="flex-1 max-w-72 ml-auto overflow-hidden">

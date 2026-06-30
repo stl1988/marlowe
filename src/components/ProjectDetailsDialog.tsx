@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type Project } from '@/lib/ProjectsManager';
 import {
@@ -25,11 +25,14 @@ import {
   FileCode,
   Download,
   Trash2,
+  Leaf,
 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { Separator } from './ui/separator';
 import { DotAI } from '@/lib/DotAI';
 import { LabelSelector } from '@/components/labels/LabelSelector';
+import { Switch } from '@/components/ui/switch';
+import { useEconomyMode } from '@/hooks/useEconomyMode';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { cn } from '@/lib/utils';
 import JSZip from 'jszip';
@@ -55,6 +58,18 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
   const projectsManager = useProjectsManager();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { economyMode, setEconomyMode } = useEconomyMode(project.id);
+
+  const handleEconomyModeChange = useCallback(async (checked: boolean) => {
+    await setEconomyMode(checked);
+    toast({
+      title: checked ? 'Economy Mode enabled' : 'Economy Mode disabled',
+      description: checked
+        ? 'The AI will minimise token usage and keep replies short.'
+        : 'The AI will operate normally without credit-saving restrictions.',
+    });
+  }, [setEconomyMode, toast]);
 
   // Reset state when project changes
   useEffect(() => {
@@ -292,6 +307,22 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
                 )
               )}
             </a>
+          </div>
+
+          {/* Economy Mode Toggle */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Leaf className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+              <div>
+                <div className="font-medium">Economy Mode</div>
+                <div className="text-xs text-muted-foreground">Instructs AI to use fewer tool calls and write shorter replies to save credits</div>
+              </div>
+            </div>
+            <Switch
+              checked={economyMode}
+              onCheckedChange={handleEconomyModeChange}
+              aria-label="Toggle economy mode"
+            />
           </div>
 
           {/* Project Name */}

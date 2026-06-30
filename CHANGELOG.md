@@ -1,5 +1,16 @@
 # Changelog
 
+## [10.1.0] - 2026-06-30
+
+### Added
+- **Economy Mode**: per-project credit-saving toggle that injects strict token-reduction instructions into the AI system prompt
+  - 🌿 Leaf icon toggle in the chat input bar — one click to enable/disable for the current project
+  - Toggle in Project Details dialog (via the project title menu) with a descriptive label
+  - Default economy mode toggle on the homepage "create project" form — saved to localStorage so new projects inherit your preference
+  - When enabled, the AI is instructed to: plan before acting, read only needed file sections, avoid speculative reads, batch all edits in one turn, skip unnecessary builds, commit once at the end, and keep replies concise
+  - Setting is persisted per-project in `.git/shakespeare/settings.json`
+  - Economy mode can be toggled at any time without starting a new session — takes effect on the next message
+
 ## [10.0.2] - 2026-06-30
 
 ### Changed

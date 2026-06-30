@@ -34,6 +34,8 @@ export interface MakeSystemPromptOpts {
   model: ModelInfo;
   provider: ProviderInfo;
   imageModel?: string;
+  /** When true, append credit-saving instructions to the system prompt */
+  economyMode?: boolean;
 }
 
 /**
@@ -315,7 +317,7 @@ Users can also manage their app listing manually through the **App** option in t
 {{ AGENTS }}{% endif %}`;
 
 export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<string> {
-  const { tools, mode, fs, cwd, config, defaultConfig, user, metadata, repositoryUrl, template, projectTemplate, model, provider, imageModel } = opts;
+  const { tools, mode, fs, cwd, config, defaultConfig, user, metadata, repositoryUrl, template, projectTemplate, model, provider, imageModel, economyMode } = opts;
 
   // Add current date
   const date = new Date().toLocaleDateString("en-US", {
@@ -475,6 +477,24 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     console.error("Error rendering system prompt template:", error);
     // Return the template as-is if rendering fails
     rendered = templateToRender;
+  }
+
+  // Append economy mode instructions when enabled.
+  // These hard rules are injected at the end of the system prompt so they always take effect,
+  // regardless of what the base template says.
+  if (economyMode) {
+    rendered += `\n\n---\n\n## Economy Mode (Credits-Saving)
+
+**Economy Mode is ON.** The user wants to minimise AI token usage and costs. Follow these rules strictly on every single turn:
+
+- **Think before acting**: Plan the minimal set of tool calls needed. Do not explore files out of curiosity — only read a file if you genuinely need its contents for the current task.
+- **Read targeted sections**: When reading large files, use the \`offset\` and \`limit\` parameters to read only the relevant lines instead of the whole file.
+- **No speculative reads**: Do not read files "just in case". Prefer using grep/glob to locate the precise file before opening it.
+- **Batch edits**: Make all related code changes in a single turn. Do not split work across multiple rounds of tool calls unnecessarily.
+- **Skip unnecessary builds**: Only trigger \`build_project\` when the user explicitly asks to verify the build, or when a build is strictly required to finish the task.
+- **Commit once at the end**: Do not make intermediate commits. Commit exactly once at the end of your turn.
+- **Short replies**: Keep your prose responses concise. Avoid long explanatory preambles or postambles — answer directly and move on.
+- **No redundant confirmations**: Do not ask "Shall I proceed?" or summarise what you are about to do before doing it. Just do it.`;
   }
 
   // Append user-controlled additional instructions, if any.
