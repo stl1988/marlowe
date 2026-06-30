@@ -251,31 +251,42 @@ When deploying, all components (frontend, backend, APIs) must go to a **single p
 - **Never assume the user has any deployment provider configured**—always ask first and offer to help with setup
 - Do not create backend configuration files (wrangler.jsonc, railway.json, netlify/functions/, etc.) until the user has explicitly chosen and confirmed a deployment provider
 
-## "Vibed with Shakespeare"
+## "Vibed with Marlowe" / "Vibed with Shakespeare"
 
-When building a site for the first time, include "Vibed with Shakespeare" somewhere in the UI, linked to this URL: https://shakespeare.diy
+{% if isShakespeareProject %}This project was originally created in Shakespeare. Keep any existing "Vibed with Shakespeare" text, but **also add** " and Marlowe" to it, so it reads: **"Vibed with Shakespeare and Marlowe"** — link "Shakespeare" to https://shakespeare.diy and "Marlowe" to https://marlowe.shakespeare.wtf{% else %}When building a site for the first time, include **"Vibed with Marlowe"** somewhere in the UI, linked to this URL: https://marlowe.shakespeare.wtf{% endif %}
 
-## Edit with Shakespeare
+## Edit with Marlowe{% if isShakespeareProject %} and Shakespeare{% endif %}
 
-The "Edit with Shakespeare" button is a way that people can start editing any Shakespeare-compatible site with a single click. It can be added anywhere markdown or HTML is supported, including in READMEs, or within an app itself.{% if repositoryUrl %}
+The "Edit with Marlowe" button lets people start editing any Marlowe-compatible site with a single click. It can be added anywhere markdown or HTML is supported, including in READMEs, or within an app itself.{% if repositoryUrl %}
 
-This project has a repository URL configured, so you can create an "Edit with Shakespeare" button using the following code snippets:
+This project has a repository URL configured. **Always include the "Edit with Marlowe" button.** Use the teal-colored Marlowe badge:
 
 **Markdown:**
 \`\`\`markdown
-[![Edit with Shakespeare]({{ badgeUrl }})]({{ editUrl }})
+[![Edit with Marlowe]({{ marloweBadgeUrl }})]({{ marloweEditUrl }})
 \`\`\`
 
 **HTML/JSX/TSX:**
 \`\`\`jsx
+<a href="{{ marloweEditUrl }}" target="_blank">
+  <img src="{{ marloweBadgeUrl }}" alt="Edit with Marlowe" />
+</a>
+\`\`\`
+{% if isShakespeareProject %}
+For projects originally created in Shakespeare, **also keep** the Shakespeare badge alongside the Marlowe one:
+
+\`\`\`jsx
 <a href="{{ editUrl }}" target="_blank">
   <img src="{{ badgeUrl }}" alt="Edit with Shakespeare" />
 </a>
+<a href="{{ marloweEditUrl }}" target="_blank">
+  <img src="{{ marloweBadgeUrl }}" alt="Edit with Marlowe" />
+</a>
 \`\`\`
+{% endif %}
+Note: badges should be displayed at their natural size. Omit width/height attributes or use \`height: auto\` / \`"h-auto"\` in Tailwind CSS.{% else %}
 
-Note: the badge should be displayed at its natural size. It is recommended to omit width/height attributes to ensure proper scaling, or use \`height: auto\` in CSS (or \`"h-auto"\` in Tailwind CSS) when applicable.{% else %}
-
-**Important**: This project does not currently have a repository URL configured. If the user asks about adding an "Edit with Shakespeare" button, inform them that they must first initialize a public Git repository from their Shakespeare project. Once a repository URL is available, an "Edit with Shakespeare" button can be created.{% endif %}
+**Important**: This project does not currently have a repository URL configured. To add an "Edit with Marlowe" button, first initialize a public Git repository from the project settings. Once a repository URL is available, the button can be created.{% endif %}
 
 ## Publishing an App
 
@@ -371,6 +382,44 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     editUrl = editUrlObj.toString();
   }
 
+  // Build URLs for Edit with Marlowe
+  let marloweBadgeUrl: string | undefined;
+  let marloweEditUrl: string | undefined;
+  if (repositoryUrl) {
+    marloweBadgeUrl = new URL('/marlowe-badge.svg', location.origin).toString();
+    const marloweEditUrlObj = new URL('/clone', location.origin);
+    marloweEditUrlObj.searchParams.set('url', repositoryUrl);
+    marloweEditUrl = marloweEditUrlObj.toString();
+  }
+
+  // Detect whether this project was originally created in Shakespeare.
+  // We scan a few key source files for telltale Shakespeare signatures.
+  let isShakespeareProject = false;
+  try {
+    const filesToCheck = [
+      join(cwd, 'src/components/Shakespeare/ChatPane.tsx'),
+      join(cwd, 'AGENTS.md'),
+      join(cwd, 'README.md'),
+    ];
+    for (const filePath of filesToCheck) {
+      try {
+        const content = await fs.readFile(filePath, 'utf8') as string;
+        if (
+          content.includes('Vibed with Shakespeare') ||
+          content.includes('shakespeare.diy') ||
+          content.includes('Edit with Shakespeare')
+        ) {
+          isShakespeareProject = true;
+          break;
+        }
+      } catch {
+        // file doesn't exist, skip
+      }
+    }
+  } catch {
+    // ignore detection errors
+  }
+
   // Build context object for template
   const context = {
     mode,
@@ -402,6 +451,9 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     },
     badgeUrl,
     editUrl,
+    marloweBadgeUrl,
+    marloweEditUrl,
+    isShakespeareProject,
     README: readmeText,
     AGENTS: agentsText,
     projectTemplate,
