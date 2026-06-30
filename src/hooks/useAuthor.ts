@@ -1,4 +1,4 @@
-import { type NostrEvent, type NostrMetadata, NSchema as n } from '@nostrify/nostrify';
+import { type NostrEvent, type NostrMetadata } from '@nostrify/nostrify';
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 
@@ -17,8 +17,6 @@ export function useAuthor(pubkey: string | undefined) {
         { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) },
       );
 
-      console.log(`[useAuthor] pubkey=${pubkey.slice(0, 8)} got ${events.length} events`);
-
       const event = events[0];
 
       if (!event) {
@@ -26,8 +24,9 @@ export function useAuthor(pubkey: string | undefined) {
       }
 
       try {
-        const metadata = n.json().pipe(n.metadata()).parse(event.content);
-        console.log(`[useAuthor] resolved name=${metadata.name} for ${pubkey.slice(0, 8)}`);
+        // Parse content directly — avoids NSchema.metadata() which may reject
+        // non-standard fields (e.g. "sp_address", "displayName") under Zod v3.
+        const metadata = JSON.parse(event.content) as NostrMetadata;
         return { metadata, event };
       } catch {
         return { event };
