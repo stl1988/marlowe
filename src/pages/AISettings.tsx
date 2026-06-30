@@ -50,6 +50,7 @@ export function AISettings() {
   const openRouterOAuth = useOpenRouterOAuth();
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [systemPromptInput, setSystemPromptInput] = useState(config.systemPrompt || defaultSystemPrompt);
+  const [additionalInstructionsInput, setAdditionalInstructionsInput] = useState(config.additionalInstructions || '');
 
   // Dialog state
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
@@ -397,6 +398,66 @@ export function AISettings() {
                             >
                               <RotateCcw className="h-4 w-4 mr-2" />
                               {t('restoreToDefault')}
+                            </Button>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+
+                {/* Additional Instructions */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">{t('additionalInstructions')}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {t('additionalInstructionsDescription')}
+                    </p>
+                  </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="additional-instructions" className="border rounded-lg">
+                      <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                        <div className="flex items-center gap-2">
+                          <Edit className="h-4 w-4" />
+                          <span className="text-sm font-medium">{t('additionalInstructions')}</span>
+                          {additionalInstructionsInput.trim() && (
+                            <div className="h-2 w-2 rounded-full bg-primary" title="Active" />
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-2">
+                          <Textarea
+                            id="additional-instructions"
+                            placeholder="e.g. Always use TypeScript strict mode. Prefer functional components. Use metric units."
+                            value={additionalInstructionsInput}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setAdditionalInstructionsInput(value);
+                              updateConfig((current) => ({
+                                ...current,
+                                additionalInstructions: value || undefined,
+                              }));
+                            }}
+                            className="flex-1 text-sm min-h-[200px]"
+                          />
+                          {additionalInstructionsInput.trim() && (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setAdditionalInstructionsInput('');
+                                updateConfig((current) => {
+                                  const { additionalInstructions: _, ...rest } = current;
+                                  return rest;
+                                });
+                              }}
+                              className="w-full"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              {t('clearAdditionalInstructions')}
                             </Button>
                           )}
                         </div>

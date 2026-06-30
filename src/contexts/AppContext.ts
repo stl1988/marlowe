@@ -68,6 +68,11 @@ export interface AppConfig {
   sentryEnabled: boolean;
   /** System prompt EJS template */
   systemPrompt?: string;
+  /**
+   * Additional instructions appended to every system prompt.
+   * Fully user-controlled — never overwritten by Marlowe updates.
+   */
+  additionalInstructions?: string;
   /** Plausible Analytics domain (empty string = disabled). */
   plausibleDomain: string;
   /** Plausible Analytics API endpoint (empty string = use default). */
