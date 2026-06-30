@@ -105,6 +105,7 @@ interface ShakespeareFormData {
 }
 
 interface NsiteFormData {
+  siteType: 'root' | 'named';
   siteTitle: string;
   siteDescription: string;
   dTag: string;
@@ -173,10 +174,12 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
         // If a config already exists, seed the form from it and stay in summary mode.
         // If not, show the full form so the user can configure for the first time.
         if (cfg) {
+          const isRoot = cfg.id === null || cfg.id === undefined || cfg.id === '';
           setNsiteForm({
+            siteType: isRoot ? 'root' : 'named',
             siteTitle: cfg.title ?? '',
             siteDescription: cfg.description ?? '',
-            dTag: (cfg.id != null && cfg.id !== '') ? cfg.id : '',
+            dTag: (!isRoot && cfg.id) ? cfg.id : '',
           });
           setNsiteShowFullForm(false);
         } else {
@@ -191,6 +194,7 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
     subdomain: projectId,
   });
   const [nsiteForm, setNsiteForm] = useState<NsiteFormData>({
+    siteType: 'named',
     siteTitle: '',
     siteDescription: '',
     dTag: '',
@@ -279,7 +283,8 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
           siteTitle: nsiteForm.siteTitle || undefined,
           siteDescription: nsiteForm.siteDescription || undefined,
           sourceUrl,
-          siteIdentifier: nsiteForm.dTag || undefined,
+          // Root site: no siteIdentifier → kind 15128; Named site: pass dTag → kind 35128
+          siteIdentifier: nsiteForm.siteType === 'named' ? (nsiteForm.dTag || undefined) : undefined,
         });
       } else if (selectedProvider.type === 'netlify') {
         const netlifyProvider = selectedProvider;
@@ -390,7 +395,7 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
           data: {
             siteTitle: nsiteForm.siteTitle || undefined,
             siteDescription: nsiteForm.siteDescription || undefined,
-            dTag: nsiteForm.dTag || undefined,
+            dTag: nsiteForm.siteType === 'named' ? (nsiteForm.dTag || undefined) : undefined,
           },
         });
 
@@ -400,7 +405,8 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
         const newNsiteVfsConfig: NsiteVfsConfig = {
           relays: nsiteProvider.relayUrls,
           servers: nsiteProvider.blossomServers,
-          id: nsiteForm.dTag || undefined,
+          // null = root site (kind 15128), string = named site (kind 35128)
+          id: nsiteForm.siteType === 'named' ? (nsiteForm.dTag || undefined) : null,
           title: nsiteForm.siteTitle || undefined,
           description: nsiteForm.siteDescription || undefined,
           fallback: '/index.html',
@@ -517,7 +523,7 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
     setError(null);
     // Reset forms
     setShakespeareForm({ subdomain: projectId });
-    setNsiteForm({ siteTitle: '', siteDescription: '', dTag: '' });
+    setNsiteForm({ siteType: 'named', siteTitle: '', siteDescription: '', dTag: '' });
     setNetlifyForm({ siteId: '', siteName: '' });
     setVercelForm({ projectName: projectName || projectId, teamId: '' });
     setCloudflareForm({ projectName: projectName || projectId });
@@ -534,6 +540,10 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
 
   const handleShakespeareValidationChange = useCallback((isValid: boolean) => {
     setIsShakespeareFormValid(isValid);
+  }, []);
+
+  const handleNsiteSiteTypeChange = useCallback((siteType: 'root' | 'named') => {
+    setNsiteForm(prev => ({ ...prev, siteType }));
   }, []);
 
   const handleNsiteSiteTitleChange = useCallback((siteTitle: string) => {
@@ -606,13 +616,20 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
         return (
           <div className="space-y-3">
             <div className="rounded-md border bg-muted/30 p-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Type</span>
+                <span className="font-medium">
+                  {nsiteVfsConfig.id === null || nsiteVfsConfig.id === undefined || nsiteVfsConfig.id === ''
+                    ? 'Root site'
+                    : `Named site (${nsiteVfsConfig.id})`}
+                </span>
+              </div>
               {nsiteVfsConfig.title && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Title</span>
                   <span className="font-medium">{nsiteVfsConfig.title}</span>
                 </div>
               )}
-
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Relays</span>
                 <span className="font-medium">{relayCount} configured</span>
@@ -646,9 +663,11 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
           <NsiteDeployForm
             key={selectedProviderId}
             projectName={projectName || projectId}
+            siteType={nsiteForm.siteType}
             savedNsec={legacy?.nsec}
             savedSiteTitle={savedSiteTitle}
             savedSiteDescription={savedSiteDescription}
+            onSiteTypeChange={handleNsiteSiteTypeChange}
             onSiteTitleChange={handleNsiteSiteTitleChange}
             onSiteDescriptionChange={handleNsiteSiteDescriptionChange}
           />
@@ -953,7 +972,7 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
                     (selectedProvider.type === 'shakespeare' && !user) ||
                     (selectedProvider.type === 'shakespeare' && !isShakespeareFormValid) ||
                     (selectedProvider.type === 'nsite' && !user) ||
-                    (selectedProvider.type === 'nsite' && !nsiteForm.dTag) ||
+                    (selectedProvider.type === 'nsite' && nsiteForm.siteType === 'named' && !nsiteForm.dTag) ||
                     (selectedProvider.type === 'netlify' && !netlifyForm.siteId && !netlifyForm.siteName) ||
                     (selectedProvider.type === 'cloudflare' && !cloudflareForm.projectName) ||
                     (selectedProvider.type === 'deno' && !denoDeployForm.projectName) ||

@@ -4,24 +4,30 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface NsiteDeployFormProps {
   /** Human-readable project name — used to default the title */
   projectName: string;
+  /** 'root' = kind 15128 (no d tag), 'named' = kind 35128 (d tag) */
+  siteType: 'root' | 'named';
   /** Persisted values from a previous deployment */
   savedSiteTitle?: string;
   savedSiteDescription?: string;
   /** Present only when the project was previously deployed with a dedicated keypair (v1) */
   savedNsec?: string;
+  onSiteTypeChange: (type: 'root' | 'named') => void;
   onSiteTitleChange: (title: string) => void;
   onSiteDescriptionChange: (description: string) => void;
 }
 
 export function NsiteDeployForm({
   projectName,
+  siteType,
   savedSiteTitle,
   savedSiteDescription,
   savedNsec,
+  onSiteTypeChange,
   onSiteTitleChange,
   onSiteDescriptionChange,
 }: NsiteDeployFormProps) {
@@ -29,8 +35,6 @@ export function NsiteDeployForm({
   const [siteDescription, setSiteDescription] = useState(savedSiteDescription ?? '');
 
   // On mount: sync all saved values to parent and set defaults.
-  // The component is keyed by selectedProviderId in DeploySteps, so this always
-  // runs with fresh props — no initialized guard needed.
   const initializedRef = useRef(false);
   const stableSyncToParent = useCallback(() => {
     if (initializedRef.current) return;
@@ -72,6 +76,29 @@ export function NsiteDeployForm({
         </Alert>
       )}
 
+      {/* Site type toggle */}
+      <div className="space-y-2">
+        <Label>Site type</Label>
+        <ToggleGroup
+          type="single"
+          value={siteType}
+          onValueChange={(val) => { if (val) onSiteTypeChange(val as 'root' | 'named'); }}
+          className="justify-start"
+        >
+          <ToggleGroupItem value="named" className="text-xs">
+            Named site
+          </ToggleGroupItem>
+          <ToggleGroupItem value="root" className="text-xs">
+            Root site
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <p className="text-xs text-muted-foreground">
+          {siteType === 'root'
+            ? 'Publishes as kind 15128 — served at your npub subdomain (e.g. npub1….nsite.lol).'
+            : 'Publishes as kind 35128 — served at a named subdomain (e.g. mysite.nsite.lol).'}
+        </p>
+      </div>
+
       {/* Site title */}
       <div className="space-y-2">
         <Label htmlFor="nsite-title">Site Title</Label>
@@ -82,7 +109,9 @@ export function NsiteDeployForm({
           placeholder="My Nostr Site"
         />
         <p className="text-xs text-muted-foreground">
-          Shown by nsite gateways and directories. Included as a title tag in the manifest.
+          {siteType === 'named'
+            ? 'Used as the site title and to derive the named-site identifier.'
+            : 'Shown by nsite gateways and directories.'}
         </p>
       </div>
 
@@ -96,9 +125,6 @@ export function NsiteDeployForm({
           placeholder="A short description of this site…"
           rows={3}
         />
-        <p className="text-xs text-muted-foreground">
-          Included as a description tag in the manifest.
-        </p>
       </div>
     </div>
   );
