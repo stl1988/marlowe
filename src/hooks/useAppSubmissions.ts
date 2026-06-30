@@ -13,7 +13,7 @@ export interface AppSubmission extends NostrEvent {
   description: string;
   appIconUrl: string;
   bannerUrl: string;
-  /** Author profile metadata fetched alongside app events */
+  /** Author profile metadata, resolved in a separate query */
   authorMetadata?: NostrMetadata;
 }
 
@@ -86,25 +86,60 @@ function repositoryUrlFromATag(aTagValue: string): string {
   return new NostrURI({ pubkey, identifier }).toString();
 }
 
+/** Parse a raw kind 31990 event into an AppSubmission (without authorMetadata). */
+function parseAppEvent(event: NostrEvent): AppSubmission | null {
+  try {
+    let appName = '';
+    let appIconUrl = '';
+    let bannerUrl = '';
+    let websiteUrl = '';
+    let description = '';
+
+    if (event.content) {
+      try {
+        const meta = JSON.parse(event.content) as Record<string, unknown>;
+        if (typeof meta.name === 'string') appName = meta.name;
+        if (typeof meta.about === 'string') description = meta.about;
+        if (typeof meta.picture === 'string') appIconUrl = meta.picture;
+        if (typeof meta.banner === 'string') bannerUrl = meta.banner;
+        if (typeof meta.website === 'string') websiteUrl = meta.website;
+      } catch {
+        // Non-JSON content — ignore
+      }
+    }
+
+    // Fallback: title tag
+    if (!appName) {
+      appName = event.tags.find(([name]) => name === 'title')?.[1] ?? '';
+    }
+
+    // Build repository URL from the first 30617 `a` tag
+    const repoATag = event.tags.find(([name, value]) => name === 'a' && value?.startsWith('30617:'));
+    const repositoryUrl = repoATag ? repositoryUrlFromATag(repoATag[1]) : '';
+
+    return { ...event, appName, websiteUrl, repositoryUrl, description, appIconUrl, bannerUrl };
+  } catch {
+    return null;
+  }
+}
+
 export function useAppSubmissions() {
   const { nostr } = useNostr();
   const { config } = useAppContext();
   const curatorIdentifier = config.showcaseCurator;
 
-  return useQuery({
+  // ── Query 1: fetch app events ────────────────────────────────────────────
+  const appsQuery = useQuery({
     queryKey: ['nostr', 'app-submissions', curatorIdentifier],
     queryFn: async (): Promise<AppSubmission[]> => {
-      // No curator configured — nothing to show
       if (!curatorIdentifier.trim()) return [];
 
-      // 1. Resolve the curator event to extract author pubkeys
       const curatorEvent = await resolveCuratorEvent(curatorIdentifier, nostr);
       if (!curatorEvent) return [];
 
       const authorPubkeys = extractPubkeys(curatorEvent);
       if (authorPubkeys.length === 0) return [];
 
-      // 2. Query kind 31990 events from those authors tagged with #t:shakespeare
       const appEvents = await nostr.query(
         [{
           kinds: [31990],
@@ -115,7 +150,7 @@ export function useAppSubmissions() {
         { signal: AbortSignal.timeout(5000) },
       );
 
-      // 3. Client-side filter: only keep events with a git repo, icon, and banner
+      // Client-side filter: only keep events with a git repo, icon, and banner
       const filteredEvents = appEvents.filter(event => {
         if (!hasGitRepository(event)) return false;
         try {
@@ -127,7 +162,7 @@ export function useAppSubmissions() {
         }
       });
 
-      // 4. Deduplicate: for each pubkey+d-tag, keep only the latest event
+      // Deduplicate: for each pubkey+d-tag, keep only the latest event
       const latestMap = new Map<string, NostrEvent>();
       for (const event of filteredEvents) {
         const dTag = event.tags.find(([name]) => name === 'd')?.[1] ?? '';
@@ -138,87 +173,65 @@ export function useAppSubmissions() {
         }
       }
 
-      // 5. Batch-fetch all author profiles in a single query
-      const uniquePubkeys = [...new Set([...latestMap.values()].map(e => e.pubkey))];
-      const authorMetadataMap = new Map<string, NostrMetadata>();
-      // Track latest created_at per pubkey so we always use the most recent profile
-      const authorLatestAt = new Map<string, number>();
-      if (uniquePubkeys.length > 0) {
-        try {
-          const profileEvents = await nostr.query(
-            // Use a generous limit: relays may return multiple kind 0 per pubkey
-            [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length * 10 }],
-            { signal: AbortSignal.timeout(5000) },
-          );
-          for (const profileEvent of profileEvents) {
-            const existing = authorLatestAt.get(profileEvent.pubkey) ?? -1;
-            if (profileEvent.created_at <= existing) continue; // skip older duplicates
-            try {
-              const metadata = n.json().pipe(n.metadata()).parse(profileEvent.content);
-              authorMetadataMap.set(profileEvent.pubkey, metadata);
-              authorLatestAt.set(profileEvent.pubkey, profileEvent.created_at);
-            } catch {
-              // ignore unparseable profiles
-            }
-          }
-        } catch {
-          // Profile fetch failure is non-fatal — cards will show fallback
-        }
-      }
-
-      // 6. Shape into AppSubmission objects
-      const submissions: AppSubmission[] = [];
-      for (const event of latestMap.values()) {
-        try {
-          let appName = '';
-          let appIconUrl = '';
-          let bannerUrl = '';
-          let websiteUrl = '';
-          let description = '';
-
-          // Parse kind-0-style metadata from content
-          if (event.content) {
-            try {
-              const meta = JSON.parse(event.content) as Record<string, unknown>;
-              if (typeof meta.name === 'string') appName = meta.name;
-              if (typeof meta.about === 'string') description = meta.about;
-              if (typeof meta.picture === 'string') appIconUrl = meta.picture;
-              if (typeof meta.banner === 'string') bannerUrl = meta.banner;
-              if (typeof meta.website === 'string') websiteUrl = meta.website;
-            } catch {
-              // Non-JSON content — ignore
-            }
-          }
-
-          // Fallback: title tag
-          if (!appName) {
-            appName = event.tags.find(([name]) => name === 'title')?.[1] ?? '';
-          }
-
-          // Build repository URL from the first 30617 `a` tag
-          const repoATag = event.tags.find(([name, value]) => name === 'a' && value?.startsWith('30617:'));
-          const repositoryUrl = repoATag ? repositoryUrlFromATag(repoATag[1]) : '';
-
-          submissions.push({
-            ...event,
-            appName,
-            websiteUrl,
-            repositoryUrl,
-            description,
-            appIconUrl,
-            bannerUrl,
-            authorMetadata: authorMetadataMap.get(event.pubkey),
-          });
-        } catch (error) {
-          console.warn('Failed to parse app submission:', error);
-        }
-      }
-
-      return submissions;
+      return [...latestMap.values()]
+        .map(parseAppEvent)
+        .filter((s): s is AppSubmission => s !== null);
     },
     staleTime: 30000,
     refetchInterval: 60000,
   });
+
+  // ── Query 2: fetch author profiles separately ────────────────────────────
+  // This runs as an independent query with its own timeout + retry so it
+  // doesn't compete with the app-events fetch for relay bandwidth.
+  const apps = appsQuery.data ?? [];
+  const uniquePubkeys = [...new Set(apps.map(a => a.pubkey))];
+
+  const profilesQuery = useQuery({
+    queryKey: ['nostr', 'app-submission-profiles', uniquePubkeys.sort().join(',')],
+    queryFn: async (): Promise<Map<string, NostrMetadata>> => {
+      if (uniquePubkeys.length === 0) return new Map();
+
+      const profileEvents = await nostr.query(
+        [{ kinds: [0], authors: uniquePubkeys, limit: uniquePubkeys.length * 10 }],
+        { signal: AbortSignal.timeout(8000) },
+      );
+
+      // Keep the most recent profile per pubkey
+      const latestAt = new Map<string, number>();
+      const metadataMap = new Map<string, NostrMetadata>();
+
+      for (const profileEvent of profileEvents) {
+        const existing = latestAt.get(profileEvent.pubkey) ?? -1;
+        if (profileEvent.created_at <= existing) continue;
+        try {
+          const metadata = n.json().pipe(n.metadata()).parse(profileEvent.content);
+          metadataMap.set(profileEvent.pubkey, metadata);
+          latestAt.set(profileEvent.pubkey, profileEvent.created_at);
+        } catch {
+          // ignore unparseable profiles
+        }
+      }
+
+      return metadataMap;
+    },
+    enabled: uniquePubkeys.length > 0,
+    staleTime: 60000,
+    retry: 3,
+  });
+
+  // ── Merge: attach authorMetadata to each app ─────────────────────────────
+  const profileMap = profilesQuery.data ?? new Map<string, NostrMetadata>();
+  const data = apps.map(app => ({
+    ...app,
+    authorMetadata: profileMap.get(app.pubkey),
+  }));
+
+  return {
+    data,
+    isLoading: appsQuery.isLoading,
+    error: appsQuery.error,
+  };
 }
 
 export function useUserAppSubmissions(userPubkey?: string) {
