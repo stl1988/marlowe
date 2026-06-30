@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.0.0] - 2026-06-30
+
+### Changed
+- Bumped version to 10.0.0 — marks Marlowe's first major independent release as a Nostr-native fork of Shakespeare
+
 ## [9.14.0] - 2026-06-30
 
 ### Added
