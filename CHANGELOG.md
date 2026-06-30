@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.0.2] - 2026-06-30
+
+### Changed
+- AGENTS.md: replaced all remaining "Shakespeare" references with "Marlowe" — headings, tool descriptions, VFS/Git/i18n/gift-card sections, and component path descriptions
+
 ## [10.0.1] - 2026-06-30
 
 ### Changed

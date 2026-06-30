@@ -1,6 +1,6 @@
 # Marlowe
 
-> Marlowe v10.0.1 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+> Marlowe v10.0.2 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
 
 Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (nsite, Shakespeare Deploy, Netlify, Vercel, Cloudflare, Railway).
 

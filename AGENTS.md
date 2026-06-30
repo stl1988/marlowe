@@ -5,13 +5,13 @@
 - After EVERY code change, you MUST update `public/llms.txt` to reflect any new features, bug fixes, architectural changes, or updated links. Keep it accurate and current.
 - After EVERY code change, you MUST update **both** `CHANGELOG.md` (root, for git/humans) and `public/CHANGELOG.md` (served at `/CHANGELOG.md` by the app — this is what the changelog page displays). Always keep them identical. Add an entry under the current version (found in `package.json`) describing what changed. Use the keep-a-changelog format: `### Added`, `### Changed`, `### Fixed`. If the version already has an entry, append to it. If not, create a new `## [x.y.z] - YYYY-MM-DD` section at the top.
 
-# Shakespeare - AI-Powered App Builder
+# Marlowe - AI-Powered App Builder
 
-Shakespeare is a browser-based AI chat application that allows users to build custom web applications through natural language conversation. All operations including AI chat and Git operations are executed in client-side JavaScript, with API keys stored in browser storage. Simply describe what you want to build, and AI will help you create it.
+Marlowe is a browser-based AI chat application that allows users to build custom web applications through natural language conversation. All operations including AI chat and Git operations are executed in client-side JavaScript, with API keys stored in browser storage. Simply describe what you want to build, and AI will help you create it.
 
 ### Virtual Filesystem Layout
 
-Shakespeare uses LightningFS to provide a browser-based virtual filesystem (VFS) that persists project files in IndexedDB. This is the VFS within the browser that Shakespeare agents act upon. Each project is stored in its own isolated directory structure within the virtual filesystem.
+Marlowe uses LightningFS to provide a browser-based virtual filesystem (VFS) that persists project files in IndexedDB. This is the VFS within the browser that Marlowe agents act upon. Each project is stored in its own isolated directory structure within the virtual filesystem.
 
 #### Virtual Filesystem Architecture
 
@@ -34,11 +34,11 @@ Shakespeare uses LightningFS to provide a browser-based virtual filesystem (VFS)
 - **File Operations**: Full POSIX-like filesystem operations (read, write, mkdir, rm, etc.)
 - **Git Integration**: Projects can be initialized as Git repositories for template cloning
 
-This architecture allows Shakespeare to provide a full development environment entirely within the browser, with no server-side storage requirements.
+This architecture allows Marlowe to provide a full development environment entirely within the browser, with no server-side storage requirements.
 
-#### AI Tools Available in Shakespeare
+#### AI Tools Available in Marlowe
 
-Shakespeare provides AI agents with specialized tools for project development (note: these are different from the tools available during Shakespeare's own development). These tools are defined in `src/lib/tools/`:
+Marlowe provides AI agents with specialized tools for project development (note: these are different from the tools available during Marlowe's own development). These tools are defined in `src/lib/tools/`:
 
 - **ShellTool**: Execute shell commands in the virtual browser environment
 - **TextEditorViewTool**: Read file contents and view directory structures
@@ -70,7 +70,7 @@ Shakespeare provides AI agents with specialized tools for project development (n
 
 #### Shell Commands
 
-Shakespeare provides a comprehensive set of shell commands that are JavaScript reimplementations of common Unix commands. These commands operate on the virtual filesystem (VFS) and are accessible through the ShellTool. The shell commands are implemented in `src/lib/commands/` and provide familiar Unix-like functionality for file and directory operations.
+Marlowe provides a comprehensive set of shell commands that are JavaScript reimplementations of common Unix commands. These commands operate on the virtual filesystem (VFS) and are accessible through the ShellTool. The shell commands are implemented in `src/lib/commands/` and provide familiar Unix-like functionality for file and directory operations.
 
 **Available Commands:**
 - **File Operations**: `cat`, `cp`, `mv`, `rm`, `touch`, `find`, `grep`
@@ -88,7 +88,7 @@ AI filesystem access through tools (including shell commands via ShellTool) has 
 
 #### Web Workers and Asset URLs
 
-Shakespeare's esbuild-wasm build pipeline supports the Vite/webpack-compatible patterns for loading Web Workers and static assets:
+Marlowe's esbuild-wasm build pipeline supports the Vite/webpack-compatible patterns for loading Web Workers and static assets:
 
 ```ts
 // Module Worker (required: { type: 'module' })
@@ -123,7 +123,7 @@ Workers are bundled as separate ESM chunks and can import from npm packages norm
 
 ### Git Integration with isomorphic-git
 
-Shakespeare provides full Git functionality in the browser using `isomorphic-git` and `@isomorphic-git/lightning-fs`, with all data persisted in IndexedDB.
+Marlowe provides full Git functionality in the browser using `isomorphic-git` and `@isomorphic-git/lightning-fs`, with all data persisted in IndexedDB.
 
 #### Key Components
 
@@ -161,7 +161,7 @@ Git operations happen transparently in the background, providing professional ve
 
 ### Gift Card Redemption
 
-Shakespeare supports automatic gift card redemption via URL parameters. Users can click shareable gift card links to instantly redeem AI credits.
+Marlowe supports automatic gift card redemption via URL parameters. Users can click shareable gift card links to instantly redeem AI credits.
 
 **URL Format:**
 ```
@@ -170,7 +170,7 @@ Shakespeare supports automatic gift card redemption via URL parameters. Users ca
 
 **Flow:**
 1. User clicks gift card link (e.g., from email or social media)
-2. Shakespeare displays a dialog showing the credit amount
+2. Marlowe displays a dialog showing the credit amount
 3. URL is rewritten to `/` for privacy (removes gift card code from history)
 4. If user is not logged in or provider is not configured, a multi-step wizard guides them through setup
 5. User can switch between Nostr accounts before redeeming
@@ -185,7 +185,7 @@ See `GIFTCARD_REDEMPTION.md` for detailed documentation.
 
 ## AI Message Format
 
-Shakespeare uses OpenAI-compatible messages for communication between users and AI assistants. The message format follows these conventions:
+Marlowe uses OpenAI-compatible messages for communication between users and AI assistants. The message format follows these conventions:
 
 ### User Messages
 
@@ -219,7 +219,7 @@ Shakespeare uses OpenAI-compatible messages for communication between users and 
 }
 ```
 
-This format allows the Shakespeare UI to parse and display user actions appropriately while maintaining compatibility with OpenAI's message format standard.
+This format allows the Marlowe UI to parse and display user actions appropriately while maintaining compatibility with OpenAI's message format standard.
 
 # Project Overview
 
@@ -243,7 +243,7 @@ This project is a Nostr client application built with React 18.x, TailwindCSS 3.
   - `/src/components/auth/`: Authentication-related components (LoginArea, LoginDialog, etc.)
   - `/src/components/ai/`: AI-related components (GitCommit, GitHistoryDialog)
   - `/src/components/comments/`: Comment system components (Comment, CommentForm, CommentsSection)
-  - `/src/components/Shakespeare/`: Core Shakespeare editor components (ChatPane, FileEditor, FileTree, PreviewPane)
+  - `/src/components/Shakespeare/`: Core Marlowe editor components (ChatPane, FileEditor, FileTree, PreviewPane)
   - `/src/components/ProjectSidebar.tsx`: Sidebar component containing project list and import options
   - `/src/components/ZipImportDialog.tsx`: Dialog component for importing projects from ZIP files
   - Zap components: `ZapButton`, `ZapDialog`, `WalletModal` for Lightning payments
@@ -360,7 +360,7 @@ The AI assistant's behavior and knowledge is defined by the AGENTS.md file, whic
 
 ## Translations
 
-Shakespeare includes internationalization (i18n) support using react-i18next. The translation system allows the interface to be displayed in multiple languages.
+Marlowe includes internationalization (i18n) support using react-i18next. The translation system allows the interface to be displayed in multiple languages.
 
 ### Key Files
 
