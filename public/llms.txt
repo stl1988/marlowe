@@ -1,6 +1,6 @@
 # Marlowe
 
-> Marlowe v10.1.2 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+> Marlowe v10.2.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
 
 Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (nsite, Shakespeare Deploy, Netlify, Vercel, Cloudflare, Railway).
 
@@ -16,6 +16,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - **Additional Instructions**: Users can add personal AI instructions (Settings → AI) that survive system prompt updates — unlike the editable system prompt which can be restored to the Marlowe default.
 - **Status bars**: Two thin progress bars in the project view show storage usage and AI context window fill at a glance.
 - **Extended protocol spec tools**: AI agents can read Bitcoin BIPs, Lightning BOLTs, Blossom BUDs, Concord CORDs, Marmot spec docs, Cashu NUTs, and kind 30817 custom Nostr NIPs in addition to the standard nostr-protocol NIPs.
+- **Nostr Settings Sync (NIP-78)**: upload/download all settings (AI keys, Git credentials, deploy configs, app preferences) to Nostr via NIP-78 kind 30078 events. All data is NIP-44 encrypted to the user's own key before being published — relay operators cannot read sensitive data. Available in Settings → Storage.
 - **Economy Mode**: a per-project toggle (🌿 leaf icon in chat input, and in Project Details) that injects credit-saving instructions into the system prompt — the AI reads fewer files, batches edits, skips unnecessary builds, and replies concisely. Default preference for new projects can be set on the homepage.
 - **Bug fixes over upstream**: Several bugs present in Shakespeare at fork time have been fixed, including a TDZ crash in AppDialog, a `toJSONSchema` Zod v3 incompatibility, signer extension retry logic, and showcase author profile resolution.
 

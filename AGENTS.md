@@ -160,6 +160,32 @@ Marlowe provides full Git functionality in the browser using `isomorphic-git` an
 
 Git operations happen transparently in the background, providing professional version control without requiring Git knowledge from users.
 
+### Nostr Settings Sync (NIP-78)
+
+Marlowe supports backing up and restoring all settings across devices via Nostr, using NIP-78 kind 30078 addressable events. The feature is accessible at **Settings → Storage → Nostr Settings Sync**.
+
+#### What is synced
+
+- **AI settings** (`marlowe/settings/ai`) — providers, API keys, model preferences, MCP servers
+- **Git settings** (`marlowe/settings/git`) — credentials, author name & email
+- **Deploy settings** (`marlowe/settings/deploy`) — provider configurations and API keys
+- **App settings** (`marlowe/settings/app`) — theme, relays, language, system prompt, additional instructions, etc.
+
+#### Encryption
+
+All data is **NIP-44 encrypted to the user's own pubkey** (self-encryption) before being published to relays. This means:
+- Relay operators cannot read the content
+- Network observers cannot read the content
+- Only the holder of the corresponding private key can decrypt and read the settings
+
+Encryption/decryption uses `user.signer.nip44.encrypt(pubkey, data)` and requires a NIP-44-capable signer. The feature is disabled if the current signer does not support NIP-44.
+
+#### Implementation
+
+- `src/hooks/useNostrSettingsSync.ts` — core hook: `upload()` / `download()` / `status`
+- `src/components/NostrSettingsSync.tsx` — UI card with upload/download buttons and status
+- `src/pages/StorageSettings.tsx` — mounts `<NostrSettingsSync />` between Persist Data and Export Files
+
 ### Gift Card Redemption
 
 Marlowe supports automatic gift card redemption via URL parameters. Users can click shareable gift card links to instantly redeem AI credits.

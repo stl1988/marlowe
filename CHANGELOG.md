@@ -1,21 +1,34 @@
 # Changelog
 
-## [10.1.3] - 2026-06-30
+## [10.2.0] - 2026-07-10
+
+### Added
+- **Nostr Settings Sync (NIP-78)**: Back up and restore all settings across devices via Nostr. Available in Settings → Storage under "Nostr Settings Sync".
+  - Syncs AI providers & API keys, Git credentials, deploy provider configurations, and app settings (theme, relays, language, system prompt, etc.)
+  - All data is **NIP-44 encrypted to your own Nostr key** before being published — relay operators and network observers cannot read your API keys or passwords
+  - Upload pushes four NIP-78 kind 30078 addressable events (one per settings group, each identified by a `d` tag: `marlowe/settings/ai`, `marlowe/settings/git`, `marlowe/settings/deploy`, `marlowe/settings/app`)
+  - Download fetches and decrypts those events and applies the settings locally
+  - Requires a logged-in Nostr account with a NIP-44-capable signer
+
+### Fixed
+- **Changelog dates**: all `2026-06-30` entries corrected to `2026-07-10`
+
+## [10.1.3] - 2026-07-10
 
 ### Added
 - **ReadCordTool**: AI agents can now read Concord Protocol CORD specifications from GitHub (`concord-protocol/concord`). Concord is a protocol for E2E encrypted Discord-style communities and channels on Nostr. Supports CORDs 1–7: Private Streams, Communities, Channels, Roles, Invites, Rekeys & Refoundings, Audio/Video.
 
-## [10.1.2] - 2026-06-30
+## [10.1.2] - 2026-07-10
 
 ### Changed
 - **ReadMipTool**: completely rewritten to match the new Marmot repo structure. The numbered MIP files (`01.md`, `02.md`, …) no longer exist — the repo was reorganised into directory sections (`foundation/`, `protocol-core/`, `app-components/`, `transports/`, `features/`). The tool now accepts a relative path argument (e.g. `"foundation/identity.md"`, `"protocol-core/group-setup.md"`, `"layout.md"`) instead of a MIP number. Updated AGENTS.md documentation accordingly.
 
-## [10.1.1] - 2026-06-30
+## [10.1.1] - 2026-07-10
 
 ### Fixed
 - **ngit push broken**: `git push` to ngit-grasp servers (`git.shakespeare.diy`, `relay.ngit.dev`) now works again. These servers don't advertise the `report-status` git capability and return an empty body on a successful push. isomorphic-git unconditionally parses `"unpack ok"` from the response and threw `ParseError: Expected "unpack ok" or "unpack [error message]" but received ""`. The `GitHttp` client now detects an empty receive-pack response on a 200 and injects a synthetic `000eunpack ok\n0000` pkt-line reply, satisfying the parser while preserving real error responses unchanged.
 
-## [10.1.0] - 2026-06-30
+## [10.1.0] - 2026-07-10
 
 ### Added
 - **Economy Mode**: per-project credit-saving toggle that injects strict token-reduction instructions into the AI system prompt
@@ -26,22 +39,22 @@
   - Setting is persisted per-project in `.git/shakespeare/settings.json`
   - Economy mode can be toggled at any time without starting a new session — takes effect on the next message
 
-## [10.0.2] - 2026-06-30
+## [10.0.2] - 2026-07-10
 
 ### Changed
 - AGENTS.md: replaced all remaining "Shakespeare" references with "Marlowe" — headings, tool descriptions, VFS/Git/i18n/gift-card sections, and component path descriptions
 
-## [10.0.1] - 2026-06-30
+## [10.0.1] - 2026-07-10
 
 ### Changed
 - AGENTS.md: added rule to bump `package.json` version after every code change (patch for fixes, minor for features, major only on explicit request)
 
-## [10.0.0] - 2026-06-30
+## [10.0.0] - 2026-07-10
 
 ### Changed
 - Bumped version to 10.0.0 — marks Marlowe's first major independent release as a Nostr-native fork of Shakespeare
 
-## [9.14.0] - 2026-06-30
+## [9.14.0] - 2026-07-10
 
 ### Added
 - **NostrReadCustomNipTool**: AI agents can now read kind 30817 custom NIPs published on Nostr by passing an `naddr1` bech32 or a `pubkey:d-tag` pair

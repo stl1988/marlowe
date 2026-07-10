@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Download, Trash2, AlertTriangle, Loader2, Database, Info, Shield } from 'lucide-react';
+import { NostrSettingsSync } from '@/components/NostrSettingsSync';
 import { Button } from '@/components/ui/button';
 import { SettingsPageLayout } from '@/components/SettingsPageLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -331,6 +332,9 @@ export function StorageSettings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Nostr Settings Sync */}
+      <NostrSettingsSync />
 
       {/* Export Files */}
       <Card>
