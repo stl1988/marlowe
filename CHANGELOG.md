@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.1.2] - 2026-06-30
+
+### Changed
+- **ReadMipTool**: completely rewritten to match the new Marmot repo structure. The numbered MIP files (`01.md`, `02.md`, …) no longer exist — the repo was reorganised into directory sections (`foundation/`, `protocol-core/`, `app-components/`, `transports/`, `features/`). The tool now accepts a relative path argument (e.g. `"foundation/identity.md"`, `"protocol-core/group-setup.md"`, `"layout.md"`) instead of a MIP number. Updated AGENTS.md documentation accordingly.
+
 ## [10.1.1] - 2026-06-30
 
 ### Fixed
