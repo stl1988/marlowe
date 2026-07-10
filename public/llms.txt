@@ -15,7 +15,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - **Badge**: Marlowe ships its own teal edit badge (`/marlowe-badge.svg`) for use in READMEs and project footers.
 - **Additional Instructions**: Users can add personal AI instructions (Settings → AI) that survive system prompt updates — unlike the editable system prompt which can be restored to the Marlowe default.
 - **Status bars**: Two thin progress bars in the project view show storage usage and AI context window fill at a glance.
-- **Extended protocol spec tools**: AI agents can read Bitcoin BIPs, Lightning BOLTs, Blossom BUDs, Marmot MIPs, Cashu NUTs, and kind 30817 custom Nostr NIPs in addition to the standard nostr-protocol NIPs.
+- **Extended protocol spec tools**: AI agents can read Bitcoin BIPs, Lightning BOLTs, Blossom BUDs, Concord CORDs, Marmot spec docs, Cashu NUTs, and kind 30817 custom Nostr NIPs in addition to the standard nostr-protocol NIPs.
 - **Economy Mode**: a per-project toggle (🌿 leaf icon in chat input, and in Project Details) that injects credit-saving instructions into the system prompt — the AI reads fewer files, batches edits, skips unnecessary builds, and replies concisely. Default preference for new projects can be set on the homepage.
 - **Bug fixes over upstream**: Several bugs present in Shakespeare at fork time have been fixed, including a TDZ crash in AppDialog, a `toJSONSchema` Zod v3 incompatibility, signer extension retry logic, and showcase author profile resolution.
 

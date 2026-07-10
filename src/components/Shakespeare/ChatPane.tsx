@@ -55,6 +55,7 @@ import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
 import { ReadBipTool } from '@/lib/tools/ReadBipTool';
 import { ReadBoltTool } from '@/lib/tools/ReadBoltTool';
 import { ReadBudTool } from '@/lib/tools/ReadBudTool';
+import { ReadCordTool } from '@/lib/tools/ReadCordTool';
 import { ReadMipTool } from '@/lib/tools/ReadMipTool';
 import { ReadNutTool } from '@/lib/tools/ReadNutTool';
 import { ProjectPreviewConsoleError, clearConsoleMessages } from '@/lib/consoleMessages';
@@ -237,6 +238,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
       read_bip: new ReadBipTool(),
       read_bolt: new ReadBoltTool(),
       read_bud: new ReadBudTool(),
+      read_cord: new ReadCordTool(),
       read_mip: new ReadMipTool(),
       read_nut: new ReadNutTool(),
       blossom_upload: new BlossomUploadTool(fs, cwd, user?.signer),

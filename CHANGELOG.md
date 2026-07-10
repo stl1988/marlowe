@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.1.3] - 2026-06-30
+
+### Added
+- **ReadCordTool**: AI agents can now read Concord Protocol CORD specifications from GitHub (`concord-protocol/concord`). Concord is a protocol for E2E encrypted Discord-style communities and channels on Nostr. Supports CORDs 1–7: Private Streams, Communities, Channels, Roles, Invites, Rekeys & Refoundings, Audio/Video.
+
 ## [10.1.2] - 2026-06-30
 
 ### Changed

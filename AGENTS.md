@@ -63,6 +63,7 @@ Marlowe provides AI agents with specialized tools for project development (note:
 - **ReadBipTool**: Read a Bitcoin BIP (Bitcoin Improvement Proposal) specification from GitHub
 - **ReadBoltTool**: Read a Lightning Network BOLT (Basis of Lightning Technology) specification from GitHub
 - **ReadBudTool**: Read a Blossom BUD (Blossom Upgrade Document) specification from GitHub
+- **ReadCordTool**: Read a Concord Protocol CORD (Concord Protocol Document) specification from GitHub (`concord-protocol/concord`). Concord is a protocol for E2E encrypted Discord-style communities and channels on Nostr. CORDs: 1 (Private Streams), 2 (Communities), 3 (Channels), 4 (Roles), 5 (Invites), 6 (Rekeys & Refoundings), 7 (Audio/Video)
 - **ReadMipTool**: Read a Marmot protocol specification document from GitHub (`marmot-protocol/marmot`). The repo no longer uses numbered MIP files — pass a relative path such as `"foundation/identity.md"`, `"protocol-core/group-setup.md"`, or `"layout.md"`. Read `layout.md` first for the full document list.
 - **ReadNutTool**: Read a Cashu NUT (Notation, Usage, and Terminology) specification from GitHub
 - **BlossomUploadTool**: Upload files from the project to Blossom media hosting, returns a public URL
