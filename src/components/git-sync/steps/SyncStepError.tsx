@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Link } from 'react-router-dom';
 import { getSentryInstance } from '@/lib/sentry';
+import { GitDivergedError } from '@/lib/errors/GitDivergedError';
 
 interface SyncStepErrorProps {
   error: Error;
@@ -63,6 +64,28 @@ export function SyncStepError({ error, onDismiss, onForcePull, onForcePush, onPu
       <X className="size-4" />
     </Button>
   );
+
+  // GitDivergedError - our own safety check caught a remote that has newer
+  // changes (e.g. pushed from another device) that would be overwritten.
+  if (error instanceof GitDivergedError) {
+    return (
+      <Alert variant="destructive">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <AlertDescription className="text-sm flex-1">
+              <strong>Changes from another device detected.</strong> {remoteName} has commits that aren't in this browser yet.
+              Pull them in first, or force push to overwrite them with what's here (not recommended if you want to keep that other work).
+            </AlertDescription>
+            {renderDismissButton()}
+          </div>
+          <div className="flex gap-2">
+            {onPull && renderPullButton()}
+            {renderForcePushButton()}
+          </div>
+        </div>
+      </Alert>
+    );
+  }
 
   // MergeNotSupportedError - offer force pull or force push
   if (error instanceof GitErrors.MergeNotSupportedError) {

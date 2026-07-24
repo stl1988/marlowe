@@ -6,6 +6,7 @@ import type { NostrEvent, NostrSigner, NPool } from '@nostrify/nostrify';
 import type { JSRuntimeFS } from './JSRuntime';
 import type { GitCredential } from '@/contexts/GitSettingsContext';
 import { findCredentialsForRepo } from './gitCredentials';
+import { GitDivergedError } from './errors/GitDivergedError';
 
 export interface GitOptions {
   fs: JSRuntimeFS;
@@ -303,6 +304,23 @@ export class Git {
     const dir = options.dir || '.';
     const remoteUrl = options.url || await this.getRemoteURL(dir, remote);
 
+    // Safety check: unless the caller explicitly requested a force push,
+    // verify the remote branch (after fetching its latest state) is an
+    // ancestor of what we're about to push. This prevents silently
+    // clobbering newer work pushed from another device/browser. This is
+    // especially important for Nostr/ngit remotes, where the underlying
+    // git server(s) may not enforce fast-forward-only pushes, and for
+    // regular HTTP remotes where isomorphic-git's own guard isn't always
+    // reliable across all server configurations.
+    if (!options.force) {
+      await this.assertFastForward({
+        dir,
+        remote,
+        ref: options.ref,
+        remoteUrl,
+      });
+    }
+
     if (remoteUrl && remoteUrl.startsWith('nostr://')) {
       const nostrURI = await NostrURI.parse(remoteUrl);
       return this.nostrPush(nostrURI, {
@@ -319,6 +337,68 @@ export class Git {
       onAuth: this.onAuth,
       ...options,
     });
+  }
+
+  /**
+   * Fetches the latest remote state for `ref` and throws GitDivergedError if
+   * the local branch is not a fast-forward descendant of the remote branch
+   * (i.e. the remote has commits we don't have locally). This guards against
+   * accidentally overwriting newer work made on another device.
+   */
+  private async assertFastForward(options: { dir: string; remote: string; ref?: string; remoteUrl: string | null }): Promise<void> {
+    const { dir, remote, remoteUrl } = options;
+
+    const ref = options.ref || await git.currentBranch({ fs: this.fs, dir }) || undefined;
+    if (!ref) {
+      // Detached HEAD or no branch info — nothing sensible to compare against
+      return;
+    }
+
+    try {
+      // Fetch the latest remote state (works for both regular and Nostr remotes)
+      await this.fetch({ dir, remote, ref, singleBranch: true });
+    } catch {
+      // If we can't reach the remote to check, don't block the push here —
+      // the push itself will fail with a network error if the remote is
+      // truly unreachable.
+      return;
+    }
+
+    const remoteRef = `refs/remotes/${remote}/${ref}`;
+
+    let remoteOid: string;
+    try {
+      remoteOid = await git.resolveRef({ fs: this.fs, dir, ref: remoteRef });
+    } catch {
+      // No remote-tracking ref yet — remote branch doesn't exist, nothing to diverge from
+      return;
+    }
+
+    let localOid: string;
+    try {
+      localOid = await git.resolveRef({ fs: this.fs, dir, ref });
+    } catch {
+      return;
+    }
+
+    if (remoteOid === localOid) {
+      return; // Up to date
+    }
+
+    const localIsDescendant = await git.isDescendent({
+      fs: this.fs,
+      dir,
+      oid: localOid,
+      ancestor: remoteOid,
+    }).catch(() => false);
+
+    if (!localIsDescendant) {
+      throw new GitDivergedError(
+        `The remote branch '${ref}' on ${remoteUrl ?? remote} has changes that aren't in your local repository ` +
+        `(likely pushed from another device). Pushing now would overwrite that work. ` +
+        `Pull the latest changes first, resolve any conflicts, then push again.`
+      );
+    }
   }
 
   // Tags

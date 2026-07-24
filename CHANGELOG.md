@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.4.0] - 2026-07-24
+
+### Fixed
+- **Critical: git/ngit sync could silently overwrite newer work from another device**. Pushing (including Nostr/ngit pushes) never verified the remote hadn't moved ahead — a stale browser could clobber commits pushed from another device. `Git.push()` now fetches the latest remote ref first and refuses to push (throwing `GitDivergedError`) unless the local branch is a fast-forward descendant of the remote, unless `force` is explicitly requested. The sync UI surfaces this as a clear "changes from another device detected" alert with Pull / Force Push choices. Auto-sync also no longer pushes after a failed/conflicting pull.
+
 ## [10.3.0] - 2026-07-24
 
 ### Added

@@ -60,27 +60,36 @@ export function useGitSync(dir: string | undefined, remote = 'origin') {
 
             if (currentBranch) {
               // Pull changes from remote (this does fetch internally)
+              let pullSucceeded = false;
               try {
                 await gitSync.pull(dir, currentBranch, remote);
                 didPull = true;
+                pullSucceeded = true;
                 // Clear any previous errors on successful pull
                 gitSync.setError(dir, null);
               } catch (pullError) {
-                // Pull might fail if there are conflicts or diverged branches
-                // Error is already set by the provider - just log and continue
+                // Pull might fail if there are conflicts or diverged branches.
+                // Don't attempt to push in this case — pushing local state
+                // when we couldn't reconcile remote changes risks silently
+                // overwriting work done on another device. Surface the
+                // error to the user instead (already set by the provider)
+                // so they can resolve it explicitly (pull/merge or force push).
                 console.warn('Auto-pull failed:', pullError);
               }
 
-              // Push local changes to remote
-              try {
-                await gitSync.push(dir, currentBranch, remote);
-                didPush = true;
-                // Clear any previous errors on successful push
-                gitSync.setError(dir, null);
-              } catch (pushError) {
-                // Push might fail if there are conflicts or no changes
-                // Error is already set by the provider - just log and continue
-                console.warn('Auto-push failed:', pushError);
+              // Only push if the pull succeeded (or there was nothing to pull),
+              // so we never push on top of an unresolved divergence.
+              if (pullSucceeded) {
+                try {
+                  await gitSync.push(dir, currentBranch, remote);
+                  didPush = true;
+                  // Clear any previous errors on successful push
+                  gitSync.setError(dir, null);
+                } catch (pushError) {
+                  // Push might fail if there are conflicts or no changes
+                  // Error is already set by the provider - just log and continue
+                  console.warn('Auto-push failed:', pushError);
+                }
               }
             }
           } catch (error) {
