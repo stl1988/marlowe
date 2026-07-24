@@ -167,8 +167,8 @@ export function useAIChat({
     await sessionManager.addMessage(projectId, message);
   }, [projectId, sessionManager]);
 
-  const startNewSession = useCallback(async () => {
-    await sessionManager.startNewSession(projectId);
+  const startNewSession = useCallback(async (carryOverNote?: string) => {
+    await sessionManager.startNewSession(projectId, carryOverNote);
 
     // Reset individual state variables
     setMessages([]);
@@ -176,7 +176,12 @@ export function useAIChat({
     setTotalCost(0);
     setLastInputTokens(0);
     setLastFinishReason(null);
-  }, [projectId, sessionManager]);
+
+    // Re-sync messages in case a carry-over note was added
+    if (carryOverNote && carryOverNote.trim()) {
+      await initSession(false);
+    }
+  }, [projectId, sessionManager, initSession]);
 
   const clearMessages = useCallback(async () => {
     // Alias for startNewSession for backward compatibility

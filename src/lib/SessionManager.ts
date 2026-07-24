@@ -739,8 +739,12 @@ export class SessionManager {
 
   /**
    * Start a new session (clear messages but keep configuration)
+   *
+   * @param carryOverNote Optional text summarizing the previous chat's context.
+   *  If provided, it will be added as the first message of the new session so
+   *  the AI has continuity from the prior conversation.
    */
-  async startNewSession(projectId: string): Promise<void> {
+  async startNewSession(projectId: string, carryOverNote?: string): Promise<void> {
     const session = this.sessions.get(projectId);
     if (!session) return;
 
@@ -757,6 +761,10 @@ export class SessionManager {
     this.emit('costUpdated', projectId, 0);
     this.emit('contextUsageUpdated', projectId, 0);
     this.emit('finishReasonChanged', projectId, null);
+
+    if (carryOverNote && carryOverNote.trim()) {
+      await this.addMessage(projectId, { role: 'user', content: carryOverNote.trim() });
+    }
   }
 
   /**
@@ -818,6 +826,11 @@ export class SessionManager {
     const session = this.sessions.get(projectId);
     if (!session) return;
 
+    // Always update input tokens for context usage tracking, regardless of
+    // whether the provider gives a direct cost or we need to calculate it.
+    session.lastInputTokens = usage.prompt_tokens;
+    this.emit('contextUsageUpdated', projectId, usage.prompt_tokens);
+
     // If provider gives direct cost, use it
     if (typeof usage.cost === 'number') {
       session.totalCost = (session.totalCost || 0) + usage.cost;
@@ -838,10 +851,6 @@ export class SessionManager {
       // Find the model in provider models to get pricing and context length
       const models = this.getProviderModels();
       const model = models.find(m => m.id === modelName && m.provider === provider.id);
-
-      // Update input tokens for context usage tracking
-      session.lastInputTokens = usage.prompt_tokens;
-      this.emit('contextUsageUpdated', projectId, usage.prompt_tokens);
 
       if (!model?.pricing) {
         return;

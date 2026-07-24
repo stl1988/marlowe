@@ -72,6 +72,8 @@ import { DotAI } from '@/lib/DotAI';
 import { parseProviderModel } from '@/lib/parseProviderModel';
 import { AIMessage } from '@/lib/SessionManager';
 import { getAllSkills } from '@/lib/skills';
+import { NewChatDialog } from '@/components/NewChatDialog';
+import { buildContextCarryOverNote } from '@/lib/chatContextCarryOver';
 
 // Clean interfaces now handled by proper hooks
 
@@ -123,6 +125,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
   const [showToolsDialog, setShowToolsDialog] = useState(false);
   const [availableSkills, setAvailableSkills] = useState<Array<{ name: string; description: string; path: string; plugin: string }>>([]);
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
 
   // Determine which error to show - AI errors take priority over console errors
   // since they are more immediately relevant to the user's current action
@@ -699,15 +702,31 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
     }
   }, [onFirstInteraction]);
 
+  // Open the new-chat confirmation dialog instead of clearing immediately,
+  // so the user can choose to carry over context from the current chat.
+  const requestNewChat = useCallback(() => {
+    setShowNewChatDialog(true);
+  }, []);
+
+  const handleStartFresh = useCallback(() => {
+    setShowNewChatDialog(false);
+    internalStartNewSession();
+    onNewChat();
+  }, [internalStartNewSession, onNewChat]);
+
+  const handleCarryOverContext = useCallback(() => {
+    setShowNewChatDialog(false);
+    const carryOverNote = buildContextCarryOverNote(messages);
+    internalStartNewSession(carryOverNote);
+    onNewChat();
+  }, [internalStartNewSession, onNewChat, messages]);
+
   // Slash commands
   const slashCommands: SlashCommand[] = [
     {
       name: 'new',
       description: 'Start a new chat session',
-      action: () => {
-        internalStartNewSession();
-        onNewChat();
-      },
+      action: requestNewChat,
     },
     {
       name: 'tools',
@@ -719,9 +738,9 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
   // Expose startNewSession function via ref
   useImperativeHandle(ref, () => ({
     startNewSession: () => {
-      internalStartNewSession();
+      requestNewChat();
     }
-  }), [internalStartNewSession]);
+  }), [requestNewChat]);
 
   /** Render streaming message, loading skeleton, or tool loading state */
   const renderStreamingMessage = () => {
@@ -948,7 +967,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
             <Quilly
               error={displayError}
               onDismiss={handleErrorDismiss}
-              onNewChat={onNewChat}
+              onNewChat={requestNewChat}
               onOpenModelSelector={openModelSelector}
               onTryAgain={() => startGeneration(providerModel)}
               onRequestConsoleErrorHelp={handleConsoleErrorHelp}
@@ -995,7 +1014,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         slashCommands={slashCommands}
-        onNewChat={() => { internalStartNewSession(); onNewChat(); }}
+        onNewChat={requestNewChat}
         economyMode={economyMode}
         onToggleEconomyMode={toggleEconomyMode}
       />
@@ -1011,6 +1030,15 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         open={showToolsDialog}
         onOpenChange={setShowToolsDialog}
         tools={tools}
+      />
+
+      {/* New Chat Confirmation Dialog */}
+      <NewChatDialog
+        open={showNewChatDialog}
+        onOpenChange={setShowNewChatDialog}
+        hasPriorContext={messages.some((m) => m.role === 'user' || m.role === 'assistant')}
+        onStartFresh={handleStartFresh}
+        onCarryOverContext={handleCarryOverContext}
       />
     </div>
   );

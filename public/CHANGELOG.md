@@ -1,5 +1,14 @@
 # Changelog
 
+## [10.3.0] - 2026-07-24
+
+### Added
+- **New Chat context carry-over prompt**: starting a new chat (via the project title menu "New Chat" item, the `/new` slash command, or the context-window warning banner's "New chat" button) now shows a confirmation dialog asking whether to carry over a condensed summary of the current conversation into the new session, or start completely fresh. Carrying over context injects a recap of the most recent user/assistant exchanges as the first message of the new chat.
+
+### Fixed
+- **Context usage bar not updating for known context windows**: when an AI provider returned a direct `cost` value in its usage response, `SessionManager.updateSessionCost` returned early without updating `lastInputTokens` or emitting `contextUsageUpdated`. This meant the context window progress bar (in `StatusBars` and the chat input) never updated for those providers/models even though the model's context window size was known. Input token tracking now always happens regardless of how cost is calculated.
+- **Logo showing a black square background**: `public/marlowe.svg` (the app's quill logo, used for the homepage hero, chat empty state, onboarding dialog, and sidebar) had an opaque `#0a1a1a` background rectangle baked into the SVG. Removed the background rect so the logo now renders with a transparent background everywhere it's used.
+
 ## [10.2.0] - 2026-07-10
 
 ### Added
