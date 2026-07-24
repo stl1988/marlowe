@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.4.1] - 2026-07-24
+
+### Fixed
+- **Critical: cloning/fetching from a Nostr/ngit repo could return stale state**. `Git.fetchRepoEvents()` picked the *first* matching kind 30617/30618 event returned by the relay pool via `.find()`, instead of the most recent one. Since these are addressable (replaceable) events, relays or cached copies can return multiple versions in arbitrary order — this meant cloning a project right after pushing newer commits from another device could silently pick up an old HEAD/state event and check out outdated (or "broken") code. Now both the repo announcement and state event are selected by highest `created_at` before use.
+
 ## [10.4.0] - 2026-07-24
 
 ### Fixed

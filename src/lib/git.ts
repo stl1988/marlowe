@@ -1164,8 +1164,18 @@ export class Git {
       .group([...relayUrls].slice(0, 10))
       .query([filter], { signal: AbortSignal.timeout(5000)});
 
-    const repo = events.find((e) => e.kind === 30617);
-    const state = events.find((e) => e.kind === 30618);
+    // These are addressable (replaceable) events — multiple relays or stale
+    // caches may return older copies alongside the current one. Always pick
+    // the event with the highest created_at per kind, otherwise we risk
+    // reading a stale HEAD/state (e.g. missing commits pushed from another
+    // device) and silently operating on outdated data.
+    const latestByKind = (kind: number): NostrEvent | undefined =>
+      events
+        .filter((e) => e.kind === kind)
+        .sort((a, b) => b.created_at - a.created_at)[0];
+
+    const repo = latestByKind(30617);
+    const state = latestByKind(30618);
 
     return { repo, state };
   }
