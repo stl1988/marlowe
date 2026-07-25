@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.2] - 2026-07-25
+
+### Fixed
+- **400 error when setting thinking to "Off"**: the `reasoning_effort` API parameter only accepts `"low"`, `"medium"`, or `"high"` — `"off"` was being sent verbatim and rejected by the API. Now "Off" maps to `reasoning_effort: "low"` (minimum available) for standard providers, and `reasoning: { enabled: false }` for OpenRouter (which fully disables extended thinking on Anthropic models).
+
 ## [10.5.1] - 2026-07-25
 
 ### Fixed

@@ -437,10 +437,29 @@ export class SessionManager {
           },
         };
 
-        // Apply reasoning effort override if configured for this model
+        // Apply reasoning effort override if configured for this model.
+        // The OpenAI API only accepts "low", "medium", or "high" for
+        // reasoning_effort — there is no "off" value. We map our UI levels
+        // to what the API actually accepts:
+        //   auto → don't send the param (model default)
+        //   low → reasoning_effort: "low"
+        //   off → reasoning_effort: "low" (minimum available) + for OpenRouter,
+        //         also send reasoning: { enabled: false } to fully disable
+        //         extended thinking on Anthropic models
         const thinkingLevel = settings.modelThinkingLevels?.[providerModel];
         if (thinkingLevel && thinkingLevel !== 'auto') {
-          (completionOptions as Record<string, unknown>).reasoning_effort = thinkingLevel;
+          const body = completionOptions as Record<string, unknown>;
+          if (thinkingLevel === 'low') {
+            body.reasoning_effort = 'low';
+          } else if (thinkingLevel === 'off') {
+            // For OpenRouter, use the reasoning object to fully disable thinking
+            if (provider.id === 'openrouter' || provider.baseURL === 'https://openrouter.ai/api/v1') {
+              body.reasoning = { enabled: false };
+            } else {
+              // For other providers, "low" is the minimum valid reasoning_effort
+              body.reasoning_effort = 'low';
+            }
+          }
         }
 
         // Check if messages contain any images (for retry logic)
