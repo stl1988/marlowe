@@ -404,7 +404,7 @@ export default function Index() {
                                 aria-label="Set thinking level"
                               >
                                 <Brain className="h-3.5 w-3.5" />
-                                <span>{getModelThinkingLevel(providerModel) === 'auto' ? 'Auto' : getModelThinkingLevel(providerModel) === 'low' ? 'Low' : 'Off'}</span>
+                                <span>{getModelThinkingLevel(providerModel) === 'auto' ? 'Auto' : getModelThinkingLevel(providerModel)}</span>
                               </button>
                             </PopoverTrigger>
                           </TooltipTrigger>
@@ -414,8 +414,10 @@ export default function Index() {
                               {getModelThinkingLevel(providerModel) === 'auto'
                                 ? 'Default reasoning effort — model decides.'
                                 : getModelThinkingLevel(providerModel) === 'low'
-                                  ? 'Reduced reasoning — faster and cheaper.'
-                                  : 'No reasoning — fastest and cheapest.'}
+                                  ? 'Minimal reasoning — fastest and cheapest.'
+                                  : getModelThinkingLevel(providerModel) === 'medium'
+                                    ? 'Balanced reasoning — moderate thinking.'
+                                    : 'Maximum reasoning — slowest but best for complex problems.'}
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -424,7 +426,7 @@ export default function Index() {
                         <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                           Thinking level for this model
                         </div>
-                        {(['auto', 'low', 'off'] as ThinkingLevel[]).map((level) => (
+                        {(['auto', 'low', 'medium', 'high'] as ThinkingLevel[]).map((level) => (
                           <button
                             key={level}
                             type="button"
@@ -434,9 +436,9 @@ export default function Index() {
                             }`}
                           >
                             <Brain className="h-3.5 w-3.5" />
-                            <span>{level === 'auto' ? 'Auto' : level === 'low' ? 'Low' : 'Off'}</span>
+                            <span>{level === 'auto' ? 'Auto' : level}</span>
                             <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
-                              {level === 'auto' ? 'default' : level === 'low' ? 'reduced' : 'none'}
+                              {level === 'auto' ? 'default' : level}
                             </span>
                           </button>
                         ))}

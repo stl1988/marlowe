@@ -57,7 +57,7 @@ const aiSettingsSchema = z.object({
   imageModel: providerModelSchema.optional(),
   mcpServers: z.record(z.string(), mcpServerSchema).optional(),
   disabledBuiltinTools: z.array(z.string()).optional(),
-  modelThinkingLevels: z.record(z.string(), z.enum(['auto', 'low', 'off'])).optional(),
+  modelThinkingLevels: z.record(z.string(), z.enum(['auto', 'low', 'medium', 'high'])).optional(),
 });
 
 // New format for git credentials

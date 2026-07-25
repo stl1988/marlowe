@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.3] - 2026-07-25
+
+### Changed
+- **Thinking level options changed to Auto / Low / Medium / High**: since `reasoning_effort` can't actually be turned off (the API only accepts low/medium/high), the "Off" option was replaced with proper API-valid levels. Auto = model default, Low = minimal thinking, Medium = balanced, High = maximum.
+
 ## [10.5.2] - 2026-07-25
 
 ### Fixed

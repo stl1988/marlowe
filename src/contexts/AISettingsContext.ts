@@ -21,7 +21,7 @@ export interface MCPServers {
 }
 
 /** Reasoning effort levels for models that support reasoning_effort. */
-export type ThinkingLevel = 'auto' | 'low' | 'off';
+export type ThinkingLevel = 'auto' | 'low' | 'medium' | 'high';
 
 export interface AISettings {
   providers: AIProvider[];

@@ -53,13 +53,15 @@ interface ChatInputProps {
 const THINKING_LABELS: Record<ThinkingLevel, string> = {
   auto: 'Auto',
   low: 'Low',
-  off: 'Off',
+  medium: 'Medium',
+  high: 'High',
 };
 
 const THINKING_DESCRIPTIONS: Record<ThinkingLevel, string> = {
   auto: 'Default reasoning effort — model decides how much to think.',
-  low: 'Reduced reasoning — faster and cheaper, good for simple tasks.',
-  off: 'No reasoning — fastest and cheapest, good for trivial edits.',
+  low: 'Minimal reasoning — fastest and cheapest, good for simple tasks.',
+  medium: 'Balanced reasoning — moderate thinking for most tasks.',
+  high: 'Maximum reasoning — slowest but best for complex problems.',
 };
 
 export const ChatInput = memo(function ChatInput({
@@ -433,7 +435,7 @@ export const ChatInput = memo(function ChatInput({
                 <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
                   Thinking level for this model
                 </div>
-                {(['auto', 'low', 'off'] as ThinkingLevel[]).map((level) => (
+                {(['auto', 'low', 'medium', 'high'] as ThinkingLevel[]).map((level) => (
                   <button
                     key={level}
                     type="button"
@@ -445,7 +447,7 @@ export const ChatInput = memo(function ChatInput({
                     <Brain className="h-3.5 w-3.5" />
                     <span>{THINKING_LABELS[level]}</span>
                     <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
-                      {level === 'auto' ? 'default' : level === 'low' ? 'reduced' : 'none'}
+                      {level === 'auto' ? 'default' : level}
                     </span>
                   </button>
                 ))}
