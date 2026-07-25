@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { ReactNode, useState, useEffect } from 'react';
-import { AISettingsContext, type AISettings, type AIProvider, type MCPServer, type AISettingsContextType } from '@/contexts/AISettingsContext';
+import { AISettingsContext, type AISettings, type AIProvider, type MCPServer, type AISettingsContextType, type ThinkingLevel } from '@/contexts/AISettingsContext';
 import { useFS } from '@/hooks/useFS';
 import { useFSPaths } from '@/hooks/useFSPaths';
 import { readAISettings, writeAISettings } from '@/lib/configUtils';
@@ -153,6 +153,19 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
   const isConfigured = settings.providers.length > 0;
   const isLoading = !isInitialized;
 
+  const setModelThinkingLevel = (modelId: string, level: ThinkingLevel) => {
+    setSettings(prev => ({
+      ...prev,
+      modelThinkingLevels: {
+        ...(prev.modelThinkingLevels ?? {}),
+        [modelId]: level,
+      },
+    }));
+  };
+
+  const getModelThinkingLevel = (modelId: string): ThinkingLevel =>
+    settings.modelThinkingLevels?.[modelId] ?? 'auto';
+
   const contextValue: AISettingsContextType = {
     settings,
     updateSettings,
@@ -164,6 +177,8 @@ export function AISettingsProvider({ children }: AISettingsProviderProps) {
     removeMCPServer,
     isConfigured,
     isLoading,
+    setModelThinkingLevel,
+    getModelThinkingLevel,
   };
 
   return (

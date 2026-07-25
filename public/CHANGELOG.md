@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.0] - 2026-07-25
+
+### Added
+- **Per-model thinking level control**: a new Brain 🧠 toggle in the chat input bar (next to the Economy Mode leaf) lets you reduce or disable reasoning/thinking on models that support it (OpenAI o-series, Anthropic extended thinking via OpenRouter, DeepSeek R1, etc.). Options are **Auto** (default, model decides), **Low** (reduced reasoning — faster/cheaper), and **Off** (no reasoning — fastest/cheapest). The setting is stored per-model (`modelThinkingLevels` in AI settings) and applied to API calls via the `reasoning_effort` parameter.
+
 ## [10.4.1] - 2026-07-24
 
 ### Fixed

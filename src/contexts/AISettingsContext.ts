@@ -20,6 +20,9 @@ export interface MCPServers {
   [key: string]: MCPServer;
 }
 
+/** Reasoning effort levels for models that support reasoning_effort. */
+export type ThinkingLevel = 'auto' | 'low' | 'off';
+
 export interface AISettings {
   providers: AIProvider[];
   recentlyUsedModels: string[];
@@ -27,6 +30,8 @@ export interface AISettings {
   mcpServers?: MCPServers;
   /** Built-in tool names that are disabled. Omitting a name means the tool is enabled. */
   disabledBuiltinTools?: string[];
+  /** Per-model reasoning effort overrides, keyed by full model id (provider/model). */
+  modelThinkingLevels?: Record<string, ThinkingLevel>;
 }
 
 export interface AISettingsContextType {
@@ -40,6 +45,10 @@ export interface AISettingsContextType {
   removeMCPServer: (name: string) => void;
   isConfigured: boolean;
   isLoading: boolean;
+  /** Set the reasoning effort override for a specific model. */
+  setModelThinkingLevel: (modelId: string, level: ThinkingLevel) => void;
+  /** Get the reasoning effort override for a specific model (default 'auto'). */
+  getModelThinkingLevel: (modelId: string) => ThinkingLevel;
 }
 
 export const AISettingsContext = createContext<AISettingsContextType | undefined>(undefined);

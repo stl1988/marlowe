@@ -67,7 +67,7 @@ export class SessionManager {
   private listeners: Partial<Record<keyof SessionManagerEvents, Set<(...args: unknown[]) => void>>> = {};
   private fs: JSRuntimeFS;
   private nostr: NPool;
-  private getSettings: () => { providers: AIProvider[]; imageModel?: string };
+  private getSettings: () => { providers: AIProvider[]; imageModel?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> };
   private getConfig: () => AppConfig;
   private getDefaultConfig: () => AppConfig;
   private getProviderModels?: () => Array<{ id: string; provider: string; contextLength?: number; pricing?: { prompt: Decimal; completion: Decimal } }>;
@@ -76,7 +76,7 @@ export class SessionManager {
   constructor(
     fs: JSRuntimeFS,
     nostr: NPool,
-    getSettings: () => { providers: AIProvider[]; imageModel?: string },
+    getSettings: () => { providers: AIProvider[]; imageModel?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> },
     getConfig: () => AppConfig,
     getDefaultConfig: () => AppConfig,
     getProviderModels?: () => Array<{ id: string; provider: string; contextLength?: number; pricing?: { prompt: Decimal; completion: Decimal } }>,
@@ -436,6 +436,12 @@ export class SessionManager {
             include_usage: true,
           },
         };
+
+        // Apply reasoning effort override if configured for this model
+        const thinkingLevel = settings.modelThinkingLevels?.[providerModel];
+        if (thinkingLevel && thinkingLevel !== 'auto') {
+          (completionOptions as Record<string, unknown>).reasoning_effort = thinkingLevel;
+        }
 
         // Check if messages contain any images (for retry logic)
         const hasImages = messages.some(msg => {

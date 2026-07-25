@@ -8,6 +8,14 @@ import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { useAISettings } from '@/hooks/useAISettings';
+import type { ThinkingLevel } from '@/contexts/AISettingsContext';
+import { Brain } from 'lucide-react';
 
 export interface SlashCommand {
   name: string;
@@ -42,6 +50,18 @@ interface ChatInputProps {
   onToggleEconomyMode?: () => void;
 }
 
+const THINKING_LABELS: Record<ThinkingLevel, string> = {
+  auto: 'Auto',
+  low: 'Low',
+  off: 'Off',
+};
+
+const THINKING_DESCRIPTIONS: Record<ThinkingLevel, string> = {
+  auto: 'Default reasoning effort — model decides how much to think.',
+  low: 'Reduced reasoning — faster and cheaper, good for simple tasks.',
+  off: 'No reasoning — fastest and cheapest, good for trivial edits.',
+};
+
 export const ChatInput = memo(function ChatInput({
   isLoading,
   isConfigured,
@@ -69,6 +89,7 @@ export const ChatInput = memo(function ChatInput({
   onToggleEconomyMode,
 }: ChatInputProps) {
   const { t } = useTranslation();
+  const { getModelThinkingLevel, setModelThinkingLevel } = useAISettings();
   const [input, setInput] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [showSlashCommands, setShowSlashCommands] = useState(false);
@@ -377,6 +398,59 @@ export const ChatInput = memo(function ChatInput({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+
+          {/* Thinking Level Toggle */}
+          {providerModel.trim() && (
+            <Popover>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                          getModelThinkingLevel(providerModel) !== 'auto'
+                            ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:bg-violet-500/25'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        }`}
+                        aria-label="Set thinking level"
+                      >
+                        <Brain className="h-3.5 w-3.5" />
+                        <span>{THINKING_LABELS[getModelThinkingLevel(providerModel)]}</span>
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="font-medium mb-1">Thinking: {THINKING_LABELS[getModelThinkingLevel(providerModel)]}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {THINKING_DESCRIPTIONS[getModelThinkingLevel(providerModel)]}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <PopoverContent align="center" className="w-56 p-1">
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  Thinking level for this model
+                </div>
+                {(['auto', 'low', 'off'] as ThinkingLevel[]).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setModelThinkingLevel(providerModel, level)}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted ${
+                      getModelThinkingLevel(providerModel) === level ? 'bg-muted font-medium' : ''
+                    }`}
+                  >
+                    <Brain className="h-3.5 w-3.5" />
+                    <span>{THINKING_LABELS[level]}</span>
+                    <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
+                      {level === 'auto' ? 'default' : level === 'low' ? 'reduced' : 'none'}
+                    </span>
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
           )}
 
           {/* Model Selector */}
