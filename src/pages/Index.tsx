@@ -21,11 +21,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ModelSelector } from '@/components/ModelSelector';
 import { FileAttachment } from '@/components/ui/file-attachment';
-import { ArrowUp, Leaf } from 'lucide-react';
+import { ArrowUp, Leaf, Brain } from 'lucide-react';
 import { ShakespeareLogo } from '@/components/ShakespeareLogo';
 import { AppShowcase } from '@/components/AppShowcase';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import type { ThinkingLevel } from '@/contexts/AISettingsContext';
 import { DotAI } from '@/lib/DotAI';
 export default function Index() {
   const { t } = useTranslation();
@@ -42,7 +44,7 @@ export default function Index() {
   const projectsManager = useProjectsManager();
   const { fs } = useFS();
   const { generateProjectInfo, isLoading: isGeneratingInfo } = useGenerateProjectInfo();
-  const { settings, addRecentlyUsedModel, isLoading: isLoadingSettings } = useAISettings();
+  const { settings, addRecentlyUsedModel, isLoading: isLoadingSettings, getModelThinkingLevel, setModelThinkingLevel } = useAISettings();
   const { config } = useAppContext();
   const [providerModel, setProviderModel] = useState(() => {
     // Initialize with first recently used model if available, otherwise empty
@@ -384,6 +386,63 @@ export default function Index() {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
+
+                  {/* Thinking Level Toggle */}
+                  {providerModel.trim() && (
+                    <Popover>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                                  getModelThinkingLevel(providerModel) !== 'auto'
+                                    ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:bg-violet-500/25'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                                aria-label="Set thinking level"
+                              >
+                                <Brain className="h-3.5 w-3.5" />
+                                <span>{getModelThinkingLevel(providerModel) === 'auto' ? 'Auto' : getModelThinkingLevel(providerModel) === 'low' ? 'Low' : 'Off'}</span>
+                              </button>
+                            </PopoverTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="font-medium mb-1">Thinking: {getModelThinkingLevel(providerModel)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {getModelThinkingLevel(providerModel) === 'auto'
+                                ? 'Default reasoning effort — model decides.'
+                                : getModelThinkingLevel(providerModel) === 'low'
+                                  ? 'Reduced reasoning — faster and cheaper.'
+                                  : 'No reasoning — fastest and cheapest.'}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <PopoverContent align="center" className="w-56 p-1">
+                        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                          Thinking level for this model
+                        </div>
+                        {(['auto', 'low', 'off'] as ThinkingLevel[]).map((level) => (
+                          <button
+                            key={level}
+                            type="button"
+                            onClick={() => setModelThinkingLevel(providerModel, level)}
+                            className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-muted ${
+                              getModelThinkingLevel(providerModel) === level ? 'bg-muted font-medium' : ''
+                            }`}
+                          >
+                            <Brain className="h-3.5 w-3.5" />
+                            <span>{level === 'auto' ? 'Auto' : level === 'low' ? 'Low' : 'Off'}</span>
+                            <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
+                              {level === 'auto' ? 'default' : level === 'low' ? 'reduced' : 'none'}
+                            </span>
+                          </button>
+                        ))}
+                      </PopoverContent>
+                    </Popover>
+                  )}
 
                   {/* Model Selector - always show to allow configuration */}
                   <div className="flex-1 max-w-72 ml-auto overflow-hidden">

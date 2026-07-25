@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.1] - 2026-07-25
+
+### Fixed
+- **Thinking level toggle missing on homepage**: the Brain 🧠 toggle was only added to the project chat input, not the homepage's main prompt field. Now visible on both the homepage and the project view.
+
 ## [10.5.0] - 2026-07-25
 
 ### Added
