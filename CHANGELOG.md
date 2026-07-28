@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.4] - 2026-07-25
+
+### Fixed
+- **Screenshots silently dropped for certain models**: the image retry logic assumed any 400/404/500 error was caused by images, retried without them, and if that succeeded (for any reason), permanently marked the session as "images not supported" — stripping all images for the rest of the conversation. This was especially common when `reasoning_effort` was set, since some models reject that parameter with a 400. Now when the no-images retry also fails, the code additionally retries without `reasoning_effort` (with images restored) before concluding that images are truly unsupported.
+
 ## [10.5.3] - 2026-07-25
 
 ### Changed

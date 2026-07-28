@@ -454,8 +454,10 @@ export class SessionManager {
         });
 
         // Generate streaming response with retry logic for models that don't support images
+        // or that reject the reasoning_effort parameter.
         let stream: AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
         let retriedWithoutImages = false;
+        let retriedWithoutReasoning = false;
 
         try {
           stream = await openai.chat.completions.create(completionOptions, {
@@ -468,7 +470,7 @@ export class SessionManager {
           const isPotentialImageError = errorStatus === 400 || errorStatus === 404 || errorStatus === 500;
 
           if (isPotentialImageError && hasImages && !retriedWithoutImages) {
-            console.warn('API call failed, retrying without image_url parts (keeping VFS paths):', error);
+            console.warn('API call failed with images, retrying without image_url parts (keeping VFS paths):', error);
             retriedWithoutImages = true;
 
             // Strip image_url parts but keep text parts (including VFS paths)
@@ -480,15 +482,40 @@ export class SessionManager {
               messages: messagesWithoutImages
             };
 
-            // Retry the API call - if this succeeds, we know images were the problem
-            stream = await openai.chat.completions.create(retryOptions, {
-              signal: session.abortController?.signal
-            });
+            try {
+              // Retry the API call - if this succeeds, we know images were the problem
+              stream = await openai.chat.completions.create(retryOptions, {
+                signal: session.abortController?.signal
+              });
 
-            // SUCCESS: The retry without images worked, so this model doesn't support images
-            // Mark this session as not supporting images to avoid future retries
-            session.imagesNotSupported = true;
-            console.log('Retry without images succeeded - marking this session as not supporting images');
+              // SUCCESS: The retry without images worked, so this model doesn't support images
+              // Mark this session as not supporting images to avoid future retries
+              session.imagesNotSupported = true;
+              console.log('Retry without images succeeded - marking this session as not supporting images');
+            } catch (retryError) {
+              // The retry without images ALSO failed — the error wasn't about images.
+              // It might be the reasoning_effort parameter that the model doesn't support.
+              // Try once more without reasoning_effort (but with images restored).
+              const hasReasoningEffort = 'reasoning_effort' in completionOptions;
+              if (hasReasoningEffort && !retriedWithoutReasoning) {
+                retriedWithoutReasoning = true;
+                console.warn('Retry without images also failed, trying without reasoning_effort (with images restored):', retryError);
+
+                const noReasoningOptions = { ...completionOptions } as Record<string, unknown>;
+                delete noReasoningOptions.reasoning_effort;
+
+                stream = await openai.chat.completions.create(noReasoningOptions as OpenAI.Chat.Completions.ChatCompletionCreateParams, {
+                  signal: session.abortController?.signal
+                });
+
+                // SUCCESS without reasoning_effort — the model doesn't support that param.
+                // Don't mark imagesNotSupported since images weren't the problem.
+                console.log('Retry without reasoning_effort succeeded — model does not support reasoning_effort');
+              } else {
+                // Neither images nor reasoning_effort was the issue, re-throw
+                throw retryError;
+              }
+            }
           } else {
             // Re-throw if not a potential image error or already retried
             throw error;
