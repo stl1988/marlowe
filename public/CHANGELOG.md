@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.5.5] - 2026-08-24
+
+### Fixed
+- **PWA install icon on Android still showed the Shakespeare logo**: the web app manifest still referenced the old `shakespeare-*.png` icons (192/512 "any" + maskable variants), which are exactly the icons Android uses for the home-screen install. All manifest icons now point to Marlowe assets, and a new `marlowe-maskable.svg` (full-bleed dark background with the quill kept inside the maskable safe zone) serves as the adaptive/maskable icon. The unused Shakespeare icon PNGs were removed, the service worker precache now includes webp assets and the new maskable icon, and the dynamic favicon fallback was updated to the Marlowe icon.
+
 ## [10.5.4] - 2026-07-25
 
 ### Fixed

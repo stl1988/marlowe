@@ -44,10 +44,10 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      includeAssets: ['shakespeare.svg', 'shakespeare-192x192.png', 'shakespeare-512x512.png', 'sine.mp3', 'CHANGELOG.md'],
+      includeAssets: ['marlowe.svg', 'marlowe-maskable.svg', 'marlowe-icon.webp', 'sine.mp3', 'CHANGELOG.md'],
       manifest: false, // Use existing manifest.webmanifest from public folder
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,wasm,mp3}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm,mp3}'],
         maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB (to accommodate esbuild.wasm at ~12 MB)
         cleanupOutdatedCaches: true,
       },
