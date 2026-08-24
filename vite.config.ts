@@ -44,7 +44,7 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     VitePWA({
-      includeAssets: ['marlowe.svg', 'marlowe-maskable.svg', 'marlowe-icon.webp', 'sine.mp3', 'CHANGELOG.md'],
+      includeAssets: ['marlowe.svg', 'marlowe-maskable.svg', 'marlowe-icon.webp', 'icon-1024.png', 'icon-maskable-1024.png', 'sine.mp3', 'CHANGELOG.md'],
       manifest: false, // Use existing manifest.webmanifest from public folder
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm,mp3}'],

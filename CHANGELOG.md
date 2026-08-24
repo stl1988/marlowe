@@ -1,5 +1,11 @@
 # Changelog
 
+## [10.5.6] - 2026-08-24
+
+### Fixed
+- **PWA install banner/icon on Android still showed the Shakespeare logo** (follow-up to 10.5.5): Chrome's install-banner and WebAPK icon extractor cannot decode WebP, and both the `apple-touch-icon` and the first manifest icon were `.webp`, so Android fell back to a stale cached icon. The app now ships real PNG icons — `icon-1024.png` (purpose "any") and `icon-maskable-1024.png` (dark full-bleed background with the quill inside the safe zone) — listed first in the manifest, and `apple-touch-icon` now points to a PNG. WebP/SVG icons remain as modern fallbacks.
+- **Capacitor Android app still had Shakespeare launcher assets**: app name is now "Marlowe" (`strings.xml`), the launcher background color changed from Shakespeare purple (`#2b0037`) to Marlowe dark (`#0a1a1a`), the adaptive-icon foreground vector now draws the Marlowe quill instead of the Shakespeare theater masks, and all mipmap launcher PNGs were replaced with the Marlowe icon (kept only in `xxxhdpi`; Android scales down automatically).
+
 ## [10.5.5] - 2026-08-24
 
 ### Fixed

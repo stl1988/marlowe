@@ -13,6 +13,12 @@
   "theme_color": "#0d9488",
   "icons": [
     {
+      "src": "/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/marlowe-icon.webp",
       "sizes": "1024x1024",
       "type": "image/webp",
@@ -23,6 +29,12 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/marlowe-maskable.svg",

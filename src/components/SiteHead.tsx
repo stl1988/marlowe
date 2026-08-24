@@ -98,7 +98,7 @@ export function SiteHead() {
     link: [
       { rel: 'canonical', href: meta.url },
       { rel: 'icon', type: 'image/svg+xml', href: ICON_URL },
-      { rel: 'apple-touch-icon', href: `${SITE_URL}/marlowe-icon.webp` },
+      { rel: 'apple-touch-icon', href: `${SITE_URL}/icon-1024.png` },
     ],
   });
 
