@@ -65,6 +65,42 @@ export function LanguagePicker({ className }: LanguagePickerProps) {
             {t('igbo')}
           </div>
         </SelectItem>
+        <SelectItem value="de">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇩🇪</span>
+            {t('german')}
+          </div>
+        </SelectItem>
+        <SelectItem value="es">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇪🇸</span>
+            {t('spanish')}
+          </div>
+        </SelectItem>
+        <SelectItem value="fr">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇫🇷</span>
+            {t('french')}
+          </div>
+        </SelectItem>
+        <SelectItem value="it">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇮🇹</span>
+            {t('italian')}
+          </div>
+        </SelectItem>
+        <SelectItem value="nl">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇳🇱</span>
+            {t('dutch')}
+          </div>
+        </SelectItem>
+        <SelectItem value="pl">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🇵🇱</span>
+            {t('polish')}
+          </div>
+        </SelectItem>
       </SelectContent>
     </Select>
   );

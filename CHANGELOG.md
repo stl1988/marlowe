@@ -1,5 +1,13 @@
 # Changelog
 
+## [10.6.0] - 2026-09-04
+
+### Added
+- **Six new European languages**: the interface is now fully translated into German 🇩🇪, Spanish 🇪🇸, French 🇫🇷, Italian 🇮🇹, Dutch 🇳🇱, and Polish 🇵🇱 — in addition to the existing English, Portuguese, Chinese, Hausa, Yoruba, and Igbo. Selectable in Settings → Preferences → Language.
+
+### Changed
+- **Improved language autodetection**: when the language preference is set to "System", Marlowe now evaluates the browser's full `navigator.languages` preference list and resolves regional variants (e.g. `de-AT` → German, `pt-BR` → Portuguese) against the supported languages, instead of only using `navigator.language`.
+
 ## [10.5.6] - 2026-08-24
 
 ### Fixed

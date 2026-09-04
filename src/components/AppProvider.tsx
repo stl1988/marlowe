@@ -157,6 +157,24 @@ function useApplyTheme(theme: Theme) {
  */
 function useApplyLanguage(language?: string): void {
   useEffect(() => {
-    i18n.changeLanguage(language ?? navigator.language);
+    i18n.changeLanguage(language ?? detectSupportedLanguage());
   }, [language]);
+}
+
+/**
+ * Detect the best matching supported language from the browser's
+ * language preference list (e.g. "de-AT" resolves to "de").
+ * Returns undefined when nothing matches, letting i18next use its fallback.
+ */
+function detectSupportedLanguage(): string | undefined {
+  const supported = Object.keys(i18n.options.resources ?? {});
+  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
+
+  for (const lang of preferred) {
+    if (supported.includes(lang)) return lang;
+    const base = lang.split('-')[0];
+    if (supported.includes(base)) return base;
+  }
+
+  return undefined;
 }
