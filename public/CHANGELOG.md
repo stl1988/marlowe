@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.7.1] - 2026-09-04
+
+### Changed
+- **`read_cyberspace` tool description**: clarified that the known-documents list is non-exhaustive — any file in the Cyberspace spec repository can be fetched by path, including future DECKs (e.g. `decks/DECK-0003-*.md`), with `decks/README.md` as the live registry for discovering new filenames. (This was always how the tool behaved; the description now says so explicitly.)
+
 ## [10.7.0] - 2026-09-04
 
 ### Added

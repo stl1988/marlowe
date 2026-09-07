@@ -77,7 +77,10 @@ export class ReadCyberspaceTool implements Tool<ReadCyberspaceParams> {
       .describe(
         "Relative path to a Cyberspace spec document from the repo root, e.g. " +
         "\"CYBERSPACE_V2.md\", \"decks/DECK-0001-hyperspace.md\", \"decks/README.md\". " +
-        `Known documents: ${KNOWN_DOCS.join(", ")}`
+        `Known documents (non-exhaustive): ${KNOWN_DOCS.join(", ")}. ` +
+        "Any file in the repository can be fetched by its path, including future DECKs " +
+        "(decks/DECK-XXXX-<slug>.md) not listed here — read \"decks/README.md\" " +
+        "for the live registry to discover their exact filenames."
       ),
   });
 
