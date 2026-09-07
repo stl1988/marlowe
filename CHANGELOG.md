@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.7.0] - 2026-09-04
+
+### Added
+- **Cyberspace protocol spec tool**: a new `read_cyberspace` AI tool reads documents from the [Cyberspace protocol](https://github.com/arkin0x/cyberspace) repository — a 256-bit proof-of-work coordinate space over Nostr (kind 3333 spawn/hop/sidestep movement chains, kind 33330 location-encrypted "bags", deterministic GPS→dataspace mapping). The mandatory base spec is `CYBERSPACE_V2.md`; optional extensions (DECKs) live under `decks/`, including `DECK-0001-hyperspace.md` (Bitcoin block transit) and `DECK-0002-virtual-spawn.md`. Reference scripts (`sidestep-reference.py`, `hint-reference.py`, `decks/landfall-reference.py`), design records (`docs/`), and visualization test vectors are also readable, so the AI assistant can build Cyberspace clients, verifiers, and location-based apps.
+
 ## [10.6.0] - 2026-09-04
 
 ### Added

@@ -58,6 +58,7 @@ import { ReadBudTool } from '@/lib/tools/ReadBudTool';
 import { ReadCordTool } from '@/lib/tools/ReadCordTool';
 import { ReadMipTool } from '@/lib/tools/ReadMipTool';
 import { ReadNutTool } from '@/lib/tools/ReadNutTool';
+import { ReadCyberspaceTool } from '@/lib/tools/ReadCyberspaceTool';
 import { ProjectPreviewConsoleError, clearConsoleMessages } from '@/lib/consoleMessages';
 import { toolToOpenAI } from '@/lib/tools/openai-adapter';
 import { Tool } from '@/lib/tools/Tool';
@@ -244,6 +245,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
       read_cord: new ReadCordTool(),
       read_mip: new ReadMipTool(),
       read_nut: new ReadNutTool(),
+      read_cyberspace: new ReadCyberspaceTool(),
       blossom_upload: new BlossomUploadTool(fs, cwd, user?.signer),
       shell: new ShellTool(fs, cwd, git, config.corsProxy, user?.signer),
       read_console_messages: new ReadConsoleMessagesTool(),
