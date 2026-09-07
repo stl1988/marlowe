@@ -1,5 +1,14 @@
 # Changelog
 
+## [10.7.2] - 2026-09-04
+
+### Fixed
+- **nsite deploys failing on large source maps**: Marlowe's build emits `*.js.map` / `*.css.map` files (the main bundle's map alone is ~15 MB), which exceed the upload limits of public Blossom servers and the adapter's fixed 15-second upload timeout, aborting the whole deploy with "Failed to upload file(s) to any Blossom server". nsite deploys now skip source maps (development artifacts that production sites don't need), and the deploy success panel notes how many were skipped.
+
+### Changed
+- **nsite upload timeout scales with file size**: PUT uploads to Blossom servers now get a size-proportional timeout (floor of ~100 KB/s, minimum 15 s) instead of a flat 15 s, so large legitimate assets (images, audio, video) aren't aborted mid-upload on slower connections. HEAD existence checks keep the short 15 s timeout.
+- **Actionable nsite upload errors**: when a file still can't be uploaded to any Blossom server, the error now lists each file with its size and the per-server failure reason (HTTP status, timeout, network error) instead of just the file paths.
+
 ## [10.7.1] - 2026-09-04
 
 ### Changed

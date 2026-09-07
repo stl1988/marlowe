@@ -110,6 +110,7 @@
   "deploySettings": "部署",
   "deploySettingsDescription": "配置部署提供商",
   "deployButtonTooltip": "将您的项目部署到网站",
+  "skippedSourceMaps": "{{count}} 个源映射文件未上传（调试构件，对 Blossom 服务器来说太大）",
   "cloudSyncButtonTooltip": "使用Git同步项目以备份文件",
   "buildButtonTooltip": "构建项目并更新预览",
   "codeButtonTooltip": "切换到代码编辑器以查看和编辑文件",

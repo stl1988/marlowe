@@ -24,6 +24,26 @@ const UPLOAD_CONCURRENCY = 4;
 /** Timeout for individual HTTP requests (ms) */
 const FETCH_TIMEOUT_MS = 15_000;
 
+/**
+ * Assumed minimum upload throughput (bytes/second) used to scale PUT upload
+ * timeouts with file size. Large blobs get proportionally more time so slow
+ * connections don't abort legitimate uploads; HEAD checks keep the short
+ * fixed timeout above.
+ */
+const MIN_UPLOAD_BYTES_PER_SECOND = 100_000; // ~100 KB/s
+
+/**
+ * Compute the timeout for a PUT upload based on the file's size.
+ * Floors at FETCH_TIMEOUT_MS, then scales at MIN_UPLOAD_BYTES_PER_SECOND
+ * (e.g. a 15 MB blob gets ~150 s).
+ */
+function uploadTimeoutMs(byteLength: number): number {
+  return Math.max(
+    FETCH_TIMEOUT_MS,
+    Math.ceil(byteLength / MIN_UPLOAD_BYTES_PER_SECOND) * 1000,
+  );
+}
+
 interface FileEntry {
   /** Absolute path in the manifest, e.g. "/index.html" */
   path: string;
@@ -177,28 +197,37 @@ async function blobExistsOnServer(serverBase: string, sha256: string): Promise<b
   }
 }
 
+/** Result of a single-file upload attempt against one Blossom server */
+interface UploadAttempt {
+  ok: boolean;
+  /** Human-readable failure reason (HTTP status, timeout, network error) */
+  reason?: string;
+}
+
 /**
  * Upload a single file to a single Blossom server using a pre-signed auth header.
  * Skips the upload if the blob already exists on the server.
- * Returns true on success or if already present.
+ * The PUT timeout scales with file size so large blobs aren't aborted early.
  */
 async function uploadToServer(
   serverBase: string,
   file: FileEntry,
   authHeader: string,
-): Promise<boolean> {
+): Promise<UploadAttempt> {
   // Skip if already present
   if (await blobExistsOnServer(serverBase, file.sha256)) {
-    return true;
+    return { ok: true };
   }
 
   const blob = new File([file.data], file.path.split('/').pop() || 'file', {
     type: file.contentType,
   });
 
+  const timeoutMs = uploadTimeoutMs(file.data.byteLength);
+
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       const resp = await fetch(`${serverBase}/upload`, {
         method: 'PUT',
@@ -209,12 +238,22 @@ async function uploadToServer(
         body: blob,
         signal: controller.signal,
       });
-      return resp.ok;
+      if (resp.ok) {
+        return { ok: true };
+      }
+      const bodySnippet = (await resp.text().catch(() => '')).slice(0, 120).trim();
+      return {
+        ok: false,
+        reason: `HTTP ${resp.status}${bodySnippet ? ` (${bodySnippet})` : ''}`,
+      };
     } finally {
       clearTimeout(timer);
     }
-  } catch {
-    return false;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return { ok: false, reason: `timeout after ${Math.round(timeoutMs / 1000)}s` };
+    }
+    return { ok: false, reason: err instanceof Error ? err.message : 'network error' };
   }
 }
 
@@ -301,11 +340,24 @@ export class NsiteAdapter implements DeployAdapter {
     const relayClient = this.nostr.group(this.relayUrls);
 
     // ── Step 1: Walk dist/ and read + hash all files ──────────────────────────
-    const files: FileEntry[] = [];
-    await this.collectFiles(distPath, '', files);
+    const allFiles: FileEntry[] = [];
+    await this.collectFiles(distPath, '', allFiles);
+
+    if (allFiles.length === 0) {
+      throw new Error('No files found in dist directory.');
+    }
+
+    // Source maps (*.js.map, *.css.map) are development artifacts: they are not
+    // needed by the deployed site, they roughly double the upload volume, and
+    // their size (often tens of MB) routinely exceeds Blossom servers' upload
+    // limits. Skip them rather than fail the whole deploy.
+    const files = allFiles.filter(f => !f.path.toLowerCase().endsWith('.map'));
+    const skippedFiles = allFiles
+      .filter(f => f.path.toLowerCase().endsWith('.map'))
+      .map(f => f.path);
 
     if (files.length === 0) {
-      throw new Error('No files found in dist directory.');
+      throw new Error('No deployable files found in dist directory (only source maps).');
     }
 
     // ── Step 2: Pre-sign batched BUD-02 auth tokens ───────────────────────────
@@ -331,14 +383,21 @@ export class NsiteAdapter implements DeployAdapter {
     // uploadedSha256s: set of sha256 hashes confirmed present on ≥1 server
     const uploadedSha256s = new Set<string>();
 
+    // Per-file per-server failure reasons, for actionable error messages
+    const failuresByPath = new Map<string, string[]>();
+
     await Promise.all(
       serverBases.map(serverBase =>
         runConcurrent(files, UPLOAD_CONCURRENCY, async (file) => {
           const authHeader = authTokenMap.get(file.sha256);
           if (!authHeader) return;
-          const ok = await uploadToServer(serverBase, file, authHeader);
-          if (ok) {
+          const attempt = await uploadToServer(serverBase, file, authHeader);
+          if (attempt.ok) {
             uploadedSha256s.add(file.sha256);
+          } else {
+            const list = failuresByPath.get(file.path) ?? [];
+            list.push(`${serverBase}: ${attempt.reason ?? 'unknown error'}`);
+            failuresByPath.set(file.path, list);
           }
         }),
       ),
@@ -348,9 +407,15 @@ export class NsiteAdapter implements DeployAdapter {
     // would serve broken responses for those paths — abort before publishing.
     const failedFiles = files.filter(f => !uploadedSha256s.has(f.sha256));
     if (failedFiles.length > 0) {
-      const paths = failedFiles.map(f => f.path).join(', ');
+      const details = failedFiles
+        .map(f => {
+          const sizeMB = (f.data.byteLength / (1024 * 1024)).toFixed(1);
+          const reasons = (failuresByPath.get(f.path) ?? []).join('; ');
+          return `${f.path} (${sizeMB} MB) — ${reasons}`;
+        })
+        .join('\n');
       throw new Error(
-        `Failed to upload ${failedFiles.length} file(s) to any Blossom server: ${paths}`,
+        `Failed to upload ${failedFiles.length} file(s) to any Blossom server:\n${details}`,
       );
     }
 
@@ -429,6 +494,8 @@ export class NsiteAdapter implements DeployAdapter {
         pubkey,
         npub,
         filesPublished: files.length,
+        /** Source maps intentionally not uploaded (development artifacts) */
+        skippedFiles,
         provider: 'nsite',
         siteIdentifier: this.siteIdentifier,
         manifestKind,

@@ -110,6 +110,7 @@
   "nostrSettings": "Nostr",
   "nostrSettingsDescription": "Saita haɗin relay da zaɓuɓɓukan Nostr",
   "deployButtonTooltip": "Saka aikin ku zuwa gidan yanar gizo",
+  "skippedSourceMaps": "Ba a loda {{count}} source map ba (kayan debug, ya wuce girman uwar garken Blossom) | Ba a loda {{count}} source maps ba (kayan debug, sun wuce girman uwar garken Blossom)",
   "cloudSyncButtonTooltip": "Haɗa aikin ku tare da Git don adana fayiloli",
   "buildButtonTooltip": "Gina aiki kuma sabunta samfoti",
   "codeButtonTooltip": "Canza zuwa editan code don duba da gyara fayiloli",

@@ -120,6 +120,7 @@
   "deploySettings": "Déploiement",
   "deploySettingsDescription": "Configurez les fournisseurs de déploiement",
   "deployButtonTooltip": "Déployez votre projet sur un site web",
+  "skippedSourceMaps": "{{count}} source map n'a pas été téléversée (artefact de débogage, trop volumineux pour les serveurs Blossom) | {{count}} source maps n'ont pas été téléversées (artefacts de débogage, trop volumineux pour les serveurs Blossom)",
   "cloudSyncButtonTooltip": "Synchronisez votre projet avec Git pour sauvegarder les fichiers",
   "buildButtonTooltip": "Compilez le projet et mettez à jour la prévisualisation",
   "codeButtonTooltip": "Passez à l'éditeur de code pour voir et modifier les fichiers",

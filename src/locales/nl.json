@@ -120,6 +120,7 @@
   "deploySettings": "Deployment",
   "deploySettingsDescription": "Configureer deployment-providers",
   "deployButtonTooltip": "Deploy je project naar een website",
+  "skippedSourceMaps": "{{count}} source map is niet geüpload (debug-artefact, te groot voor Blossom-servers) | {{count}} source maps zijn niet geüpload (debug-artefacten, te groot voor Blossom-servers)",
   "cloudSyncButtonTooltip": "Synchroniseer je project met Git om bestanden te back-uppen",
   "buildButtonTooltip": "Bouw project en werk voorbeeld bij",
   "codeButtonTooltip": "Schakel naar de code-editor om bestanden te bekijken en te bewerken",

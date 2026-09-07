@@ -120,6 +120,7 @@
   "deploySettings": "Deployment",
   "deploySettingsDescription": "Deployment-Anbieter konfigurieren",
   "deployButtonTooltip": "Stelle dein Projekt als Website bereit",
+  "skippedSourceMaps": "{{count}} Source-Map wurde nicht hochgeladen (Debugging-Artefakt, zu groß für Blossom-Server) | {{count}} Source-Maps wurden nicht hochgeladen (Debugging-Artefakte, zu groß für Blossom-Server)",
   "cloudSyncButtonTooltip": "Synchronisiere dein Projekt mit Git, um Dateien zu sichern",
   "buildButtonTooltip": "Projekt erstellen und Vorschau aktualisieren",
   "codeButtonTooltip": "Zum Code-Editor wechseln, um Dateien anzuzeigen und zu bearbeiten",

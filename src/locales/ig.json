@@ -110,6 +110,7 @@
   "nostrSettings": "Nostr",
   "nostrSettingsDescription": "Hazie njikọ relay na nhọrọ Nostr",
   "deployButtonTooltip": "Buga ọrụ gị na weebụsaịtị",
+  "skippedSourceMaps": "E bugaghị {{count}} source map (ihe debug, o buru ibu n'ụlọ ọrụ Blossom) | E bugaghị {{count}} source maps (ihe debug, ha buru ibu n'ụlọ ọrụ Blossom)",
   "cloudSyncButtonTooltip": "Mekọrịta ọrụ gị na Git iji chekwaa faịlụ",
   "buildButtonTooltip": "Wulie ọrụ ma melite nlele",
   "codeButtonTooltip": "Gbanwee gaa na onye dezie koodu iji lee ma dezie faịlụ",

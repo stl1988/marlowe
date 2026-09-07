@@ -819,6 +819,15 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
               </Button>
             </div>
 
+            {(() => {
+              const skipped = deployResult.metadata?.skippedFiles;
+              if (!Array.isArray(skipped) || skipped.length === 0) return null;
+              return (
+                <p className="text-xs text-muted-foreground">
+                  {t('skippedSourceMaps', { count: skipped.length })}
+                </p>
+              );
+            })()}
           </div>
 
           <div className="flex justify-end gap-2">

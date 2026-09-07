@@ -110,6 +110,7 @@
   "deploySettings": "Implantação",
   "deploySettingsDescription": "Configure provedores de implantação",
   "deployButtonTooltip": "Implantar seu projeto em um site",
+  "skippedSourceMaps": "{{count}} mapa de origem não foi enviado (artefato de depuração, muito grande para os servidores Blossom) | {{count}} mapas de origem não foram enviados (artefatos de depuração, muito grandes para os servidores Blossom)",
   "cloudSyncButtonTooltip": "Sincronizar seu projeto com Git para fazer backup de arquivos",
   "buildButtonTooltip": "Compilar projeto e atualizar visualização",
   "codeButtonTooltip": "Alternar para o editor de código para visualizar e editar arquivos",

@@ -110,6 +110,7 @@
   "nostrSettings": "Nostr",
   "nostrSettingsDescription": "Tunto awọn asopọ relay ati awọn ayanfẹ Nostr",
   "deployButtonTooltip": "Fi iṣẹ akanṣe rẹ sinu oju opo wẹẹbu kan",
+  "skippedSourceMaps": "A kò gbé {{count}} source map sókè (ohun èlò debug, ó tóbi jù àwọn olupin Blossom) | A kò gbé {{count}} source maps sókè (àwọn ohun èlò debug, wọ́n tóbi jù àwọn olupin Blossom)",
   "cloudSyncButtonTooltip": "Ṣe iṣopọ iṣẹ akanṣe rẹ pẹlu Git lati ṣe aabo awọn faili",
   "buildButtonTooltip": "Kọ iṣẹ akanṣe ati ṣe imudojuiwọn awoṣe",
   "codeButtonTooltip": "Yipada si olutọju koodu lati wo ati ṣatunkọ awọn faili",

@@ -120,6 +120,7 @@
   "deploySettings": "Wdrażanie",
   "deploySettingsDescription": "Skonfiguruj dostawców wdrażania",
   "deployButtonTooltip": "Wdróż swój projekt na stronę internetową",
+  "skippedSourceMaps": "{{count}} mapa źródłowa nie została przesłana (artefakt debugowania, zbyt duży dla serwerów Blossom) | {{count}} mapy źródłowe nie zostały przesłane (artefakty debugowania, zbyt duże dla serwerów Blossom) | {{count}} map źródłowych nie zostało przesłanych (artefakty debugowania, zbyt duże dla serwerów Blossom)",
   "cloudSyncButtonTooltip": "Zsynchronizuj swój projekt z Git, aby utworzyć kopię zapasową plików",
   "buildButtonTooltip": "Zbuduj projekt i zaktualizuj podgląd",
   "codeButtonTooltip": "Przełącz do edytora kodu, aby przeglądać i edytować pliki",

@@ -120,6 +120,7 @@
   "deploySettings": "Despliegue",
   "deploySettingsDescription": "Configura proveedores de despliegue",
   "deployButtonTooltip": "Despliega tu proyecto en un sitio web",
+  "skippedSourceMaps": "{{count}} mapa de origen no se subió (artefacto de depuración, demasiado grande para los servidores Blossom) | {{count}} mapas de origen no se subieron (artefactos de depuración, demasiado grandes para los servidores Blossom)",
   "cloudSyncButtonTooltip": "Sincroniza tu proyecto con Git para respaldar archivos",
   "buildButtonTooltip": "Compila el proyecto y actualiza la vista previa",
   "codeButtonTooltip": "Cambia al editor de código para ver y editar archivos",
