@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Rocket, ExternalLink, AlertCircle, Settings, Cloud } from 'lucide-react';
+import { Rocket, ExternalLink, AlertCircle, Settings, Cloud, Check, TriangleAlert } from 'lucide-react';
 import { ExternalFavicon } from '@/components/ExternalFavicon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -826,6 +826,53 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
                 <p className="text-xs text-muted-foreground">
                   {t('skippedSourceMaps', { count: skipped.length })}
                 </p>
+              );
+            })()}
+
+            {(() => {
+              const reports = deployResult.metadata?.serverReports;
+              if (!Array.isArray(reports) || reports.length === 0) return null;
+
+              const valid = reports.filter(
+                (r): r is { server: string; uploaded: number; failed: string[] } =>
+                  typeof r === 'object' && r !== null &&
+                  typeof (r as Record<string, unknown>).server === 'string' &&
+                  typeof (r as Record<string, unknown>).uploaded === 'number' &&
+                  Array.isArray((r as Record<string, unknown>).failed),
+              );
+              if (valid.length === 0) return null;
+
+              return (
+                <div className="pt-1 space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t('uploadReportTitle')}
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-0.5">
+                    {valid.map((r) => {
+                      let host = r.server;
+                      try {
+                        host = new URL(r.server).host;
+                      } catch {
+                        // keep raw value
+                      }
+                      return (
+                        <li
+                          key={r.server}
+                          className="flex items-center gap-1.5"
+                          title={r.failed.length > 0 ? r.failed.join('\n') : undefined}
+                        >
+                          {r.failed.length === 0 ? (
+                            <Check className="h-3 w-3 text-green-600 dark:text-green-400" />
+                          ) : (
+                            <TriangleAlert className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                          )}
+                          <span className="font-mono">{host}</span>
+                          <span>{r.uploaded}/{r.uploaded + r.failed.length}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               );
             })()}
           </div>

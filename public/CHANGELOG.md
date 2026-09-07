@@ -1,5 +1,14 @@
 # Changelog
 
+## [10.8.0] - 2026-09-04
+
+### Added
+- **Per-server Blossom upload report on nsite deploys**: the deploy success panel now lists every configured Blossom server with a per-server outcome — confirmed blob count, and a warning icon with hover details for any rejected/failed uploads (path + reason). This makes it possible to see exactly which server gave an error, instead of relying solely on the thrown error message when a deploy fails.
+
+### Fixed
+- **Pipe characters visible in pluralized UI strings**: several translation strings used the `"singular | plural"` pipe format, which i18next does not parse — it rendered verbatim (e.g. the deploy dialog's source-map note showed both forms joined by "|"). Affected keys (`skippedSourceMaps`, `createGiftCards`, `successfullyCreatedGiftCards`, `downloadedGiftCards`) now use proper i18next plural suffixes (`_one`/`_other`, plus `_few`/`_many` for Polish and `_other` only for Chinese), in all 12 locales.
+- **Source-map skip note wording**: the note no longer claims source maps are "too large for Blossom servers" (some servers, e.g. blossom.ditto.pub, accept up to 2 GB) — they're skipped because they're debug artifacts not needed on the deployed site. The original upload failure was most likely caused by the fixed 15 s upload timeout (fixed in 10.7.2 by size-scaled timeouts), not by server size limits.
+
 ## [10.7.2] - 2026-09-04
 
 ### Fixed

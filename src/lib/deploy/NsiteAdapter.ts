@@ -386,17 +386,28 @@ export class NsiteAdapter implements DeployAdapter {
     // Per-file per-server failure reasons, for actionable error messages
     const failuresByPath = new Map<string, string[]>();
 
+    // Per-server outcome stats, surfaced in the deploy result so users can see
+    // exactly which Blossom server accepted or rejected what.
+    const serverStats = new Map<string, { uploaded: number; failed: { path: string; reason: string }[] }>();
+    for (const serverBase of serverBases) {
+      serverStats.set(serverBase, { uploaded: 0, failed: [] });
+    }
+
     await Promise.all(
       serverBases.map(serverBase =>
         runConcurrent(files, UPLOAD_CONCURRENCY, async (file) => {
           const authHeader = authTokenMap.get(file.sha256);
           if (!authHeader) return;
+          const stats = serverStats.get(serverBase);
           const attempt = await uploadToServer(serverBase, file, authHeader);
           if (attempt.ok) {
             uploadedSha256s.add(file.sha256);
+            if (stats) stats.uploaded++;
           } else {
+            const reason = attempt.reason ?? 'unknown error';
+            if (stats) stats.failed.push({ path: file.path, reason });
             const list = failuresByPath.get(file.path) ?? [];
-            list.push(`${serverBase}: ${attempt.reason ?? 'unknown error'}`);
+            list.push(`${serverBase}: ${reason}`);
             failuresByPath.set(file.path, list);
           }
         }),
@@ -496,6 +507,18 @@ export class NsiteAdapter implements DeployAdapter {
         filesPublished: files.length,
         /** Source maps intentionally not uploaded (development artifacts) */
         skippedFiles,
+        /**
+         * Per-Blossom-server upload outcome: how many blobs were confirmed
+         * present after our attempt, and which uploads failed with reasons.
+         */
+        serverReports: serverBases.map(server => {
+          const stats = serverStats.get(server);
+          return {
+            server,
+            uploaded: stats?.uploaded ?? 0,
+            failed: (stats?.failed ?? []).map(f => `${f.path}: ${f.reason}`),
+          };
+        }),
         provider: 'nsite',
         siteIdentifier: this.siteIdentifier,
         manifestKind,
