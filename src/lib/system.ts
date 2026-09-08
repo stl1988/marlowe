@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { nip19 } from "nostr-tools";
 import nunjucks from "nunjucks";
 import { JSRuntimeFS } from "./JSRuntime";
+import { AVAILABLE_SHELL_COMMAND_NAMES } from "./commands/names";
 import { getAllSkills } from "./skills";
 import type { AppConfig } from "@/contexts/AppContext";
 
@@ -205,6 +206,34 @@ If you encounter CORS (Cross-Origin Resource Sharing) errors when fetching exter
 **CORS Proxy URL Template**: \`{{ config.corsProxy }}\`
 
 Replace \`{href}\`, \`{hostname}\`, or other URL components in the template as needed.
+
+## Shell Environment (Available Commands)
+
+The \`shell\` tool runs in a **sandboxed virtual shell** — it is NOT a real system shell. Only the following commands exist:
+
+{{ shellCommands }}
+
+Additionally, these shell built-ins are available: \`true\`, \`false\`, \`:\`, \`export\`, \`unset\`, \`exit\`, \`test\` / \`[\`.
+
+**Never attempt to run any command that is not listed above.** There is no \`npm\`, \`node\`, \`npx\`, \`python\`, \`pip\`, \`apt\`, \`brew\`, or any other system binary in this environment — unknown commands fail immediately with exit code 127 and an "Available commands" error message. In particular:
+- To add or remove npm packages, use the \`npm_add_package\` / \`npm_remove_package\` tools (never \`npm install\`).
+- To build or type-check the project, use the \`build_project\` tool (never \`npm run build\` or \`tsc\`).
+
+## Default Internationalization (i18n)
+
+When creating a new app or website, **always build in multi-language support (i18n) from the start** with these six languages: **English (default), German, French, Spanish, Italian, and Dutch** — unless the user explicitly requests a different set of languages or explicitly asks for a single-language app.
+
+- Use the i18n framework that comes with the project template (e.g. react-i18next) and wire it up from the beginning; never hard-code user-facing strings.
+- Provide complete, native-quality translations in all six languages for every user-facing string, and keep all locale files in sync whenever you add, change, or remove strings.
+- Use i18next-native pluralization keys (\`_one\` / \`_other\`, plus \`_few\` / \`_many\` / \`_zero\` where a language's plural rules require them) — never pack multiple plural forms into a single string (e.g. with \`|\` separators).
+- Include a language picker in the UI so users can switch languages, and persist the chosen language.
+
+## Nostr Best Practices
+
+When an app uses Nostr:
+
+- **Never use very short query timeouts.** Relay round-trips routinely take a second or more — especially on mobile connections — so a timeout like 200 ms will silently return incomplete or empty results. Use at least ~1.5 s (\`AbortSignal.timeout(1500)\`) for routine queries, and 3–5 s for large or critical ones.
+- **Stream events instead of waiting for whole batches.** Prefer a streaming approach when fetching events, so the UI renders content incrementally as it arrives from relays — e.g. iterate the request stream (such as Nostrify's \`nostr.req()\`) and append each event to state as it lands, rather than awaiting an entire result set before showing anything. Combine streaming with timestamp-based pagination (\`until\`) for feeds.
 
 ## Deployment Options
 
@@ -456,6 +485,8 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     marloweBadgeUrl,
     marloweEditUrl,
     isShakespeareProject,
+    // Definitive list of virtual-shell commands, rendered inline-code formatted.
+    shellCommands: AVAILABLE_SHELL_COMMAND_NAMES.map((name) => `\`${name}\``).join(', '),
     README: readmeText,
     AGENTS: agentsText,
     projectTemplate,

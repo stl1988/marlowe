@@ -1,4 +1,5 @@
 export { type ShellCommand, type ShellCommandResult, createSuccessResult, createErrorResult } from './ShellCommand';
+export { AVAILABLE_SHELL_COMMAND_NAMES } from './names';
 export { CatCommand } from './cat';
 export { CdCommand } from './cd';
 export { ClearCommand } from './clear';

@@ -96,7 +96,7 @@ describe('makeSystemPrompt', () => {
     it('should generate a basic system prompt in agent mode', async () => {
       const result = await makeSystemPrompt(baseOpts);
 
-      expect(result).toContain('You are Shakespeare, an expert software extraordinaire');
+      expect(result).toContain('You are Marlowe, an expert software extraordinaire');
       expect(result).toContain('Your goal is to work on the project in the current directory');
       expect(result).toContain('explore and understand the project structure');
     });
@@ -104,7 +104,7 @@ describe('makeSystemPrompt', () => {
     it('should generate a basic system prompt in init mode', async () => {
       const result = await makeSystemPrompt({ ...baseOpts, mode: 'init' });
 
-      expect(result).toContain('You are Shakespeare, an expert software extraordinaire');
+      expect(result).toContain('You are Marlowe, an expert software extraordinaire');
       expect(result).toContain('The files in the current directory are a template');
       expect(result).toContain('transform this template into a working project');
     });
@@ -315,11 +315,11 @@ describe('makeSystemPrompt', () => {
     });
   });
 
-  describe('Edit with Shakespeare section', () => {
+  describe('Edit with Marlowe section', () => {
     it('should show message when no repository URL is configured', async () => {
       const result = await makeSystemPrompt(baseOpts);
 
-      expect(result).toContain('## Edit with Shakespeare');
+      expect(result).toContain('## Edit with Marlowe');
       expect(result).toContain('This project does not currently have a repository URL configured');
     });
 
@@ -329,9 +329,9 @@ describe('makeSystemPrompt', () => {
         repositoryUrl: 'https://github.com/user/repo.git',
       });
 
-      expect(result).toContain('## Edit with Shakespeare');
-      expect(result).toContain('[![Edit with Shakespeare]');
-      expect(result).toContain('/badge.svg');
+      expect(result).toContain('## Edit with Marlowe');
+      expect(result).toContain('[![Edit with Marlowe]');
+      expect(result).toContain('/marlowe-badge.svg');
       expect(result).toContain('/clone');
       // URL is encoded, so check for the encoded version
       expect(result).toContain('url=https%3A%2F%2Fgithub.com%2Fuser%2Frepo.git');
@@ -427,7 +427,7 @@ describe('makeSystemPrompt', () => {
       });
 
       expect(result).toContain('# Your Environment');
-      expect(result).toContain('## What Shakespeare Is');
+      expect(result).toContain('## What Marlowe Is');
       expect(result).toContain('## The User');
       expect(result).toContain('## User Interface');
       expect(result).toContain('## User Actions');
@@ -435,17 +435,17 @@ describe('makeSystemPrompt', () => {
       expect(result).toContain('## Your Role');
       expect(result).toContain('## Project Templates');
       expect(result).toContain('## Working Around CORS Issues');
-      expect(result).toContain('## Edit with Shakespeare');
+      expect(result).toContain('## Edit with Marlowe');
     });
 
-    it('should include Shakespeare architecture information', async () => {
+    it('should include Marlowe architecture information', async () => {
       const result = await makeSystemPrompt(baseOpts);
 
       expect(result).toContain('Browser-Based Storage');
       expect(result).toContain('AI Provider Independence');
       expect(result).toContain('Shakespeare AI Credits');
       expect(result).toContain('Cross-Browser Access');
-      expect(result).toContain('No Central Shakespeare Server');
+      expect(result).toContain('No Central Marlowe Server');
     });
 
     it('should include user interface description', async () => {

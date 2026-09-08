@@ -1,5 +1,17 @@
 # Changelog
 
+## [10.9.0] - 2026-09-08
+
+### Added
+- **Default i18n rule for new projects**: the default system prompt now instructs the AI to always build multi-language support into new apps/websites from the start — English (default), German, French, Spanish, Italian, and Dutch — with complete native-quality translations, i18next-native pluralization, and a language picker, unless the user explicitly asks for a different language set or a single-language app.
+- **Nostr data-fetching guardrails in the system prompt**: when an app uses Nostr, the AI is instructed to never use very short relay query timeouts (200 ms is far too short — use at least ~1.5 s, and 3–5 s for large queries) and to prefer a streaming approach for fetching events (render events incrementally as they arrive, e.g. via Nostrify's `nostr.req()`) instead of waiting for full batches.
+- **Definitive shell command list in the system prompt**: the default system prompt now embeds the exact set of commands available in the virtual shell — sourced from the new single source of truth `AVAILABLE_SHELL_COMMAND_NAMES` (`src/lib/commands/names.ts`) — plus the shell built-ins, and explicitly forbids non-existent commands such as `npm`, `node` or `python` (package management and builds must go through the `npm_add_package` / `npm_remove_package` / `build_project` tools). Unknown commands already failed with exit code 127 and an "Available commands" message; now the AI knows the list before ever trying.
+- **`ShellTool.getCommandNames()`**: new public method returning all registered shell command names, sorted alphabetically.
+
+### Fixed
+- **Stale system-prompt tests**: `src/lib/system.test.ts` still asserted Shakespeare-era template wording ("You are Shakespeare…", "## What Shakespeare Is", "## Edit with Shakespeare", "No Central Shakespeare Server"); updated to match the current Marlowe template.
+- **AGENTS.md inaccuracies**: the Shell Commands section listed `tree` (which does not exist in the virtual shell) and omitted most real commands and all built-ins; the Translations section described editing translation resources inside `src/lib/i18n.ts` even though translations now live in per-language JSON files under `src/locales/` (imported via import attributes). Both sections rewritten to match reality, including the i18next-native pluralization rule.
+
 ## [10.8.0] - 2026-09-04
 
 ### Added

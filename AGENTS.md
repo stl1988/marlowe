@@ -71,13 +71,16 @@ Marlowe provides AI agents with specialized tools for project development (note:
 
 #### Shell Commands
 
-Marlowe provides a comprehensive set of shell commands that are JavaScript reimplementations of common Unix commands. These commands operate on the virtual filesystem (VFS) and are accessible through the ShellTool. The shell commands are implemented in `src/lib/commands/` and provide familiar Unix-like functionality for file and directory operations.
+Marlowe provides a set of shell commands that are JavaScript reimplementations of common Unix commands. These commands operate on the virtual filesystem (VFS) and are accessible through the ShellTool. The shell commands are implemented in `src/lib/commands/` and provide familiar Unix-like functionality for file and directory operations.
+
+**The virtual shell is not a real system shell.** Only the commands listed below exist — anything else (e.g. `npm`, `node`, `npx`, `python`, `pip`, `apt`, `awk`) fails immediately with exit code 127 and an error message that lists the available commands. AI agents must never attempt non-existent commands: package management goes through the `npm_add_package` / `npm_remove_package` tools, and building/type-checking through the `build_project` tool. The canonical command list lives in `src/lib/commands/names.ts` (`AVAILABLE_SHELL_COMMAND_NAMES`) and is injected into the default system prompt (`src/lib/system.ts`), so agents know the available commands up front. `ShellTool.getCommandNames()` returns the live registry names; keep `names.ts` in sync when adding or removing commands.
 
 **Available Commands:**
-- **File Operations**: `cat`, `cp`, `mv`, `rm`, `touch`, `find`, `grep`
-- **Directory Operations**: `cd`, `ls`, `mkdir`, `pwd`, `tree`
-- **System Commands**: `echo`, `which`, `wc`, `head`, `tail`
+- **File Operations**: `cat`, `cp`, `mv`, `rm`, `touch`, `find`, `grep`, `head`, `tail`, `wc`, `diff`, `sed`, `cut`, `tr`, `sort`, `uniq`, `hexdump`
+- **Directory Operations**: `cd`, `ls`, `mkdir`, `pwd`
+- **System Commands**: `echo`, `which`, `whoami`, `date`, `env`, `clear`, `curl`, `unzip`
 - **Git Commands**: `git add`, `git commit`, `git push`, `git pull`, `git status`, `git log`, `git diff`, `git branch`, `git checkout`, `git switch`, `git merge`, `git revert`, `git rm`, `git mv`, `git restore`, `git rev-parse`, `git ls-files`, `git tag`, `git stash`, `git fetch`, `git clone`, `git init`, `git reset`, `git show`, `git remote`, `git config`
+- **Shell built-ins** (handled by the executor, not in the registry): `true`, `false`, `:`, `export`, `unset`, `exit`, `test` / `[`
 
 #### Security
 
@@ -391,7 +394,8 @@ Marlowe includes internationalization (i18n) support using react-i18next. The tr
 
 ### Key Files
 
-- **`src/lib/i18n.ts`**: Main translation configuration file containing all translation resources for supported languages
+- **`src/locales/<code>.json`**: One JSON file per language holding that language's translation strings (currently `en`, `de`, `es`, `fr`, `it`, `nl`, `pl`, `pt`, `zh`, `ha`, `yo`, `ig`). English (`en.json`) is the fallback and must always contain every key.
+- **`src/lib/i18n.ts`**: i18next initialization — imports each locale JSON via import attributes (`with { type: 'json' }`) and registers them in the `resources` object
 - **`src/components/LanguagePicker.tsx`**: Language selection component used in preferences, must be updated when adding new languages
 
 ### Usage in Components
@@ -418,13 +422,14 @@ Translation keys are organized by functionality:
 
 ### Adding New Languages
 
-1. Add the new language code and translation object to the `resources` object in `src/lib/i18n.ts`
-2. Add all required key-value pairs for the new language, following existing patterns
+1. Create `src/locales/<code>.json` with all required key-value pairs for the new language, following the structure of `en.json`
+2. Import the new JSON file in `src/lib/i18n.ts` (using `with { type: 'json' }`) and add it to the `resources` object
 3. Update `src/components/LanguagePicker.tsx` to include the new language option in the dropdown
-4. Add the language name translations (e.g., `spanish: 'Spanish'`) to all existing language objects
+4. Add the language name translations (e.g., `spanish: 'Spanish'`) to all existing locale files
 5. Use descriptive, hierarchical key names (avoid duplicates)
 6. Keep translations concise and consistent with existing patterns
-7. Test the new language thoroughly to ensure proper display across all components
+7. For pluralized strings, use i18next-native plural suffixes (`_one` / `_other`, plus `_few` / `_many` / `_zero` where the language's plural rules require them, e.g. Polish) — never use the `"singular | plural"` pipe format, which i18next renders verbatim
+8. Test the new language thoroughly to ensure proper display across all components
 
 ## Economy Mode
 

@@ -163,6 +163,11 @@ export class ShellTool implements Tool<ShellToolParams> {
     this.executor.setVar('PWD', newCwd);
   }
 
+  /** Names of all registered commands (including easter eggs), sorted alphabetically. */
+  getCommandNames(): string[] {
+    return Array.from(this.commands.keys()).sort();
+  }
+
   /** List of user-facing commands (excludes easter eggs). */
   getAvailableCommands(): Array<{ name: string; description: string; usage: string }> {
     return Array.from(this.commands.values())

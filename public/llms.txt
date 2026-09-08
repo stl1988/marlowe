@@ -1,6 +1,6 @@
 # Marlowe
 
-> Marlowe v10.8.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+> Marlowe v10.9.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
 
 Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (nsite, Shakespeare Deploy, Netlify, Vercel, Cloudflare, Railway).
 
@@ -12,6 +12,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - **Deployment URL**: Marlowe is deployed at https://marlowe.shakespeare.wtf and as an nsite at https://47h1rs70oqaspur8bichfzalg0wnassb8d7tslfacl7hwyaxhkmarlowe.nsite.lol
 - **Nostr-first**: Marlowe defaults to nsite (NIP-5A kind 15128/35128) as the primary deployment target, supporting both root sites and named sites. nsite deploys skip `.map` source-map files (development artifacts not needed in production), scale upload timeouts with file size, show a per-server Blossom upload report on the success panel, and report per-server failure reasons when an upload fails.
 - **System prompt**: The AI assistant introduces itself as "Marlowe" and describes the platform as a Shakespeare fork. Projects built with Marlowe are branded "Vibed with Marlowe".
+- **Opinionated build defaults**: the default system prompt requires new apps/websites to ship with i18n in six languages (English, German, French, Spanish, Italian, Dutch — including a language picker and i18next-native pluralization) unless the user says otherwise; mandates sane Nostr data practices (no sub-second relay query timeouts, streaming event fetching with incremental rendering); and embeds the exact list of available virtual-shell commands (single source of truth: `AVAILABLE_SHELL_COMMAND_NAMES` in `src/lib/commands/names.ts`) so the AI never attempts non-existent commands like `npm` or `node` — package management and builds go through dedicated tools.
 - **Badge**: Marlowe ships its own teal edit badge (`/marlowe-badge.svg`) for use in READMEs and project footers.
 - **Additional Instructions**: Users can add personal AI instructions (Settings → AI) that survive system prompt updates — unlike the editable system prompt which can be restored to the Marlowe default.
 - **Status bars**: Two thin progress bars in the project view show storage usage and AI context window fill at a glance.
