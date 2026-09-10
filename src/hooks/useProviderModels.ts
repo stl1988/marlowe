@@ -5,6 +5,7 @@ import { useAISettings } from '@/hooks/useAISettings';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAppContext } from '@/hooks/useAppContext';
 import { createAIClient } from '@/lib/ai-client';
+import { isFalProvider } from '@/lib/falai';
 
 interface ProviderModel {
   id: string;
@@ -51,6 +52,11 @@ export function useProviderModels(): ModelFetchResult {
       // Fetch models from each configured provider in parallel
       const providerPromises = settings.providers.map(async (provider) => {
         try {
+          // fal.ai is not OpenAI-compatible and has no models list endpoint
+          if (isFalProvider(provider)) {
+            return [];
+          }
+
           const openai = createAIClient(provider, user, config.corsProxy);
 
           // Fetch models with timeout

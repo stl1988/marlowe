@@ -57,6 +57,13 @@ export const AI_PROVIDER_PRESETS: PresetProvider[] = [
     tosURL: "https://routstr.com/terms",
   },
   {
+    id: "fal",
+    name: "fal.ai",
+    baseURL: "https://fal.run",
+    apiKeysURL: "https://fal.ai/dashboard/keys",
+    tosURL: "https://fal.ai/legal/terms-of-service",
+  },
+  {
     id: "zai",
     name: "Z.ai",
     baseURL: "https://api.z.ai/api/paas/v4",

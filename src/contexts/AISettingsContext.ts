@@ -27,6 +27,8 @@ export interface AISettings {
   providers: AIProvider[];
   recentlyUsedModels: string[];
   imageModel?: string;
+  /** Fallback provider/model for image generation, used when the main image model fails (e.g., "fal/fal-ai/bytedance/seedream/v4/text-to-image"). */
+  imageModelFallback?: string;
   mcpServers?: MCPServers;
   /** Built-in tool names that are disabled. Omitting a name means the tool is enabled. */
   disabledBuiltinTools?: string[];

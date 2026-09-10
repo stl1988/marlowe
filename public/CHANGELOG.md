@@ -1,5 +1,15 @@
 # Changelog
 
+## [10.10.0] - 2026-09-10
+
+### Added
+- **fal.ai image generation support**: fal.ai is now available as an image generation provider preset (Settings → AI). Since fal.ai is not an OpenAI-compatible API, it is called through its own queue protocol — requests are submitted to `queue.fal.run`, polled until completion, and the result image is downloaded (with CORS-proxy support), using fal's `Authorization: Key <apiKey>` authentication.
+- **Configurable main + fallback image model paths for fal.ai**: when a fal.ai provider is configured, the Image Generation section shows two editable model path inputs — a main model (preset: `openai/gpt-image-2.5/flare/text-to-image`) and a fallback model (preset: `fal-ai/bytedance/seedream/v4/text-to-image`). The paths are preset automatically when a fal.ai provider is added and can be changed to any fal.ai model path. If the main model fails, `generate_image` automatically retries with the fallback model and notes the switch in the tool result.
+- **Fallback model for OpenAI-compatible image providers**: the new `imageModelFallback` AI setting works for any provider, not just fal.ai — image generation falls back to the configured fallback model on failure.
+
+### Changed
+- **`useProviderModels` skips fal.ai providers**: fal.ai has no OpenAI-compatible `/models` endpoint, so model discovery no longer attempts (and logs) a failing request for fal.ai providers.
+
 ## [10.9.0] - 2026-09-08
 
 ### Added

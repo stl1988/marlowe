@@ -55,6 +55,7 @@ const aiSettingsSchema = z.object({
   providers: filteredArray(aiProviderSchema),
   recentlyUsedModels: filteredArray(providerModelSchema),
   imageModel: providerModelSchema.optional(),
+  imageModelFallback: providerModelSchema.optional(),
   mcpServers: z.record(z.string(), mcpServerSchema).optional(),
   disabledBuiltinTools: z.array(z.string()).optional(),
   modelThinkingLevels: z.record(z.string(), z.enum(['auto', 'low', 'medium', 'high'])).optional(),

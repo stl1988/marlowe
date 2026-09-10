@@ -1,7 +1,9 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bot, ChevronDown, RotateCcw, FileText, Edit, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
@@ -26,6 +28,8 @@ import { BuiltinPluginsSection } from '@/components/BuiltinPluginsSection';
 import { ProjectTemplatesSection } from '@/components/ProjectTemplatesSection';
 import { defaultSystemPrompt } from '@/lib/system';
 import { ModelInput } from '@/components/ModelInput';
+import { ExternalFavicon } from '@/components/ExternalFavicon';
+import { DEFAULT_FAL_FALLBACK_MODEL, DEFAULT_FAL_MAIN_MODEL, isFalProvider } from '@/lib/falai';
 import {
   DndContext,
   closestCenter,
@@ -104,6 +108,23 @@ export function AISettings() {
     setAddDialogOpen(true);
   };
 
+  // When a fal.ai provider is added, preset the main and fallback image model
+  // paths (unless already configured), since fal.ai model paths cannot be
+  // discovered through the OpenAI-compatible model list.
+  const presetFalDefaults = (provider: AIProvider) => {
+    if (!isFalProvider(provider)) return;
+    const updates: Partial<typeof settings> = {};
+    if (!settings.imageModel) {
+      updates.imageModel = `${provider.id}/${DEFAULT_FAL_MAIN_MODEL}`;
+    }
+    if (!settings.imageModelFallback) {
+      updates.imageModelFallback = `${provider.id}/${DEFAULT_FAL_FALLBACK_MODEL}`;
+    }
+    if (Object.keys(updates).length > 0) {
+      updateSettings(updates);
+    }
+  };
+
   const handleAddPresetProvider = (preset: PresetProvider, apiKey: string) => {
     const newProvider: AIProvider = {
       id: preset.id,
@@ -126,10 +147,12 @@ export function AISettings() {
     }
 
     setProvider(newProvider);
+    presetFalDefaults(newProvider);
   };
 
   const handleAddCustomProvider = (provider: AIProvider) => {
     setProvider(provider);
+    presetFalDefaults(provider);
   };
 
   const handleRemoveProvider = (id: string) => {
@@ -143,6 +166,24 @@ export function AISettings() {
 
   const configuredProviderIds = settings.providers.map(p => p.id);
   const availablePresets = AI_PROVIDER_PRESETS.filter(preset => !configuredProviderIds.includes(preset.id));
+
+  // fal.ai image generation settings (fal.ai is not OpenAI-compatible and
+  // uses custom model paths, so it gets dedicated main/fallback inputs)
+  const falProvider = settings.providers.find(isFalProvider);
+  const falPrefix = falProvider ? `${falProvider.id}/` : null;
+  const falMainPath = falPrefix && settings.imageModel?.startsWith(falPrefix)
+    ? settings.imageModel.slice(falPrefix.length)
+    : DEFAULT_FAL_MAIN_MODEL;
+  const falFallbackPath = falPrefix && settings.imageModelFallback?.startsWith(falPrefix)
+    ? settings.imageModelFallback.slice(falPrefix.length)
+    : DEFAULT_FAL_FALLBACK_MODEL;
+
+  const handleFalModelChange = (kind: 'main' | 'fallback') => (e: ChangeEvent<HTMLInputElement>) => {
+    if (!falProvider) return;
+    const path = e.target.value.trim() || (kind === 'main' ? DEFAULT_FAL_MAIN_MODEL : DEFAULT_FAL_FALLBACK_MODEL);
+    const value = `${falProvider.id}/${path}`;
+    updateSettings(kind === 'main' ? { imageModel: value } : { imageModelFallback: value });
+  };
 
   const imageModelFilter = useCallback((model: { type?: 'chat' | 'image'; modalities?: string[] }) => {
     // Filter out models that are definitely NOT image models
@@ -334,6 +375,49 @@ export function AISettings() {
                       </Button>
                     )}
                   </div>
+
+                  {/* fal.ai model paths (main + fallback) */}
+                  {falProvider && (
+                    <div className="rounded-lg border p-4 space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <ExternalFavicon
+                            url={falProvider.baseURL}
+                            size={16}
+                            fallback={<Bot size={16} />}
+                          />
+                          <h4 className="text-sm font-medium">{t('falaiModels')}</h4>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {t('falaiModelsDescription')}
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="fal-main-model" className="text-xs">{t('falaiMainModelPath')}</Label>
+                          <Input
+                            id="fal-main-model"
+                            value={falMainPath}
+                            placeholder={DEFAULT_FAL_MAIN_MODEL}
+                            onChange={handleFalModelChange('main')}
+                            className="font-mono text-xs bg-muted/50"
+                            spellCheck={false}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="fal-fallback-model" className="text-xs">{t('falaiFallbackModelPath')}</Label>
+                          <Input
+                            id="fal-fallback-model"
+                            value={falFallbackPath}
+                            placeholder={DEFAULT_FAL_FALLBACK_MODEL}
+                            onChange={handleFalModelChange('fallback')}
+                            className="font-mono text-xs bg-muted/50"
+                            spellCheck={false}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <Separator />
 

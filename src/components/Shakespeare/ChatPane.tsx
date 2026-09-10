@@ -71,6 +71,8 @@ import { ToolsDialog } from '@/components/Shakespeare/ToolsDialog';
 import { buildMessageContent } from '@/lib/buildMessageContent';
 import { DotAI } from '@/lib/DotAI';
 import { parseProviderModel } from '@/lib/parseProviderModel';
+import { DEFAULT_FAL_FALLBACK_MODEL, isFalProvider } from '@/lib/falai';
+import type { ImageGenerationTarget } from '@/lib/tools/GenerateImageTool';
 import { AIMessage } from '@/lib/SessionManager';
 import { getAllSkills } from '@/lib/skills';
 import { NewChatDialog } from '@/components/NewChatDialog';
@@ -287,6 +289,23 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
           mode = 'chat';
         }
 
+        // Resolve the fallback image model (used when the main model fails)
+        let fallback: ImageGenerationTarget | undefined;
+        if (settings.imageModelFallback) {
+          try {
+            const parsed = parseProviderModel(settings.imageModelFallback, settings.providers);
+            fallback = { provider: parsed.provider, model: parsed.model };
+          } catch (fallbackError) {
+            console.warn('Failed to parse imageModelFallback:', fallbackError);
+          }
+        }
+
+        // fal.ai providers always get a fallback (preset default) unless the
+        // main model already is the fallback model
+        if (!fallback && isFalProvider(provider) && model !== DEFAULT_FAL_FALLBACK_MODEL) {
+          fallback = { provider, model: DEFAULT_FAL_FALLBACK_MODEL };
+        }
+
         tools.generate_image = new GenerateImageTool(
           fs,
           tmpPath,
@@ -294,7 +313,8 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
           model,
           mode,
           user,
-          config.corsProxy
+          config.corsProxy,
+          fallback
         );
       } catch (error) {
         console.warn('Failed to parse imageModel:', error);

@@ -213,6 +213,16 @@ Marlowe supports automatic gift card redemption via URL parameters. Users can cl
 
 See `GIFTCARD_REDEMPTION.md` for detailed documentation.
 
+### fal.ai Image Generation
+
+Marlowe supports fal.ai as an image generation provider (Settings → AI → Advanced). fal.ai is **not** an OpenAI-compatible API, so it bypasses the OpenAI client and uses its own protocol.
+
+- **Provider**: preset id `fal`, baseURL `https://fal.run`, authenticated with an `Authorization: Key <apiKey>` header
+- **Model paths**: fal.ai model paths contain slashes (e.g. `fal-ai/bytedance/seedream/v4/text-to-image`) and cannot be discovered via an OpenAI-style `/models` endpoint, so they are entered manually. When a fal.ai provider is configured, the Image Generation section shows two editable inputs: a **main model path** (preset: `openai/gpt-image-2.5/flare/text-to-image`) and a **fallback model path** (preset: `fal-ai/bytedance/seedream/v4/text-to-image`), stored as `imageModel` / `imageModelFallback` in the `provider/model-path` format
+- **Execution**: `src/lib/falai.ts` (`generateImageWithFal`) submits to the queue API (`queue.fal.run/{model-path}`), polls the status URL (1.5 s interval, 3 min max), then fetches the result and downloads the image bytes. Unknown input parameters are stripped and the request retried once on HTTP 400/422, since parameter support varies per fal.ai model
+- **Fallback**: `GenerateImageTool` accepts an optional fallback target; if the main model errors, the fallback model is tried automatically (works for any provider, not just fal.ai). For fal.ai mains, the preset fallback applies even when `imageModelFallback` is unset
+- **Detection**: `isFalProvider()` matches provider id `fal` or any `*.fal.run` baseURL, so custom providers pointing at fal.ai work too
+
 ## AI Message Format
 
 Marlowe uses OpenAI-compatible messages for communication between users and AI assistants. The message format follows these conventions:
