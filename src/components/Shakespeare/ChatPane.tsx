@@ -71,7 +71,8 @@ import { ToolsDialog } from '@/components/Shakespeare/ToolsDialog';
 import { buildMessageContent } from '@/lib/buildMessageContent';
 import { DotAI } from '@/lib/DotAI';
 import { parseProviderModel } from '@/lib/parseProviderModel';
-import { DEFAULT_FAL_FALLBACK_MODEL, isFalProvider } from '@/lib/falai';
+import { DEFAULT_FAL_FALLBACK_MODEL, DEFAULT_FAL_MAIN_MODEL, getFalImageModels, isFalProvider } from '@/lib/falai';
+import type { AIProvider } from '@/contexts/AISettingsContext';
 import type { ImageGenerationTarget } from '@/lib/tools/GenerateImageTool';
 import { AIMessage } from '@/lib/SessionManager';
 import { getAllSkills } from '@/lib/skills';
@@ -265,13 +266,27 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
       ),
     };
 
-    // Add generate_image tool if imageModel is configured
-    if (settings.imageModel) {
+    // fal.ai model paths cannot be discovered via an OpenAI-compatible model
+    // list, so surface the preset + configured fal.ai paths as synthetic entries
+    const falProvider = settings.providers.find(isFalProvider);
+    const modelsWithFal = falProvider
+      ? [...models, ...getFalImageModels(falProvider, settings.imageModel, settings.imageModelFallback)]
+      : models;
+
+    // Resolve the effective image model: the explicit setting, or the fal.ai
+    // preset main model when a fal.ai provider is configured (the paths are
+    // preset in Settings > AI and may never have been persisted)
+    const effectiveImageModel = settings.imageModel
+      ?? (falProvider ? `${falProvider.id}/${DEFAULT_FAL_MAIN_MODEL}` : undefined);
+
+    let imageTarget: { provider: AIProvider; model: string; mode: 'chat' | 'image' } | undefined;
+
+    if (effectiveImageModel) {
       try {
-        const { provider, model } = parseProviderModel(settings.imageModel, settings.providers);
+        const { provider, model } = parseProviderModel(effectiveImageModel, settings.providers);
 
         // Find the model data to determine the generation mode
-        const providerModel = models.find(m => m.fullId === settings.imageModel);
+        const providerModel = modelsWithFal.find(m => m.fullId === effectiveImageModel);
 
         // Determine mode: 'chat' if model supports image output modality, otherwise 'image'
         let mode: 'chat' | 'image' = 'image';
@@ -289,45 +304,52 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
           mode = 'chat';
         }
 
-        // Resolve the fallback image model (used when the main model fails)
-        let fallback: ImageGenerationTarget | undefined;
-        if (settings.imageModelFallback) {
-          try {
-            const parsed = parseProviderModel(settings.imageModelFallback, settings.providers);
-            fallback = { provider: parsed.provider, model: parsed.model };
-          } catch (fallbackError) {
-            console.warn('Failed to parse imageModelFallback:', fallbackError);
-          }
-        }
-
-        // fal.ai providers always get a fallback (preset default) unless the
-        // main model already is the fallback model
-        if (!fallback && isFalProvider(provider) && model !== DEFAULT_FAL_FALLBACK_MODEL) {
-          fallback = { provider, model: DEFAULT_FAL_FALLBACK_MODEL };
-        }
-
-        tools.generate_image = new GenerateImageTool(
-          fs,
-          tmpPath,
-          provider,
-          model,
-          mode,
-          user,
-          config.corsProxy,
-          fallback
-        );
+        imageTarget = { provider, model, mode };
       } catch (error) {
         console.warn('Failed to parse imageModel:', error);
       }
+    }
+
+    // Add generate_image tool if an image model is configured (or resolvable)
+    if (imageTarget) {
+      const { provider, model, mode } = imageTarget;
+
+      // Resolve the fallback image model (used when the main model fails)
+      let fallback: ImageGenerationTarget | undefined;
+      if (settings.imageModelFallback) {
+        try {
+          const parsed = parseProviderModel(settings.imageModelFallback, settings.providers);
+          fallback = { provider: parsed.provider, model: parsed.model };
+        } catch (fallbackError) {
+          console.warn('Failed to parse imageModelFallback:', fallbackError);
+        }
+      }
+
+      // fal.ai providers always get a fallback (preset default) unless the
+      // main model already is the fallback model
+      if (!fallback && isFalProvider(provider) && model !== DEFAULT_FAL_FALLBACK_MODEL) {
+        fallback = { provider, model: DEFAULT_FAL_FALLBACK_MODEL };
+      }
+
+      tools.generate_image = new GenerateImageTool(
+        fs,
+        tmpPath,
+        provider,
+        model,
+        mode,
+        user,
+        config.corsProxy,
+        fallback
+      );
     } else {
-      // If imageModel is not configured, provide tools to help configure it
+      // If image generation is not configured, provide tools to help configure it
       tools.view_available_models = new ViewAvailableModelsTool(
-        models,
+        modelsWithFal,
         settings.imageModel
       );
       tools.configure_image_generation = new ConfigureImageGenerationTool(
         aiSettings,
-        models
+        modelsWithFal
       );
     }
 

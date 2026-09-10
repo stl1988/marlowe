@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Tool, ToolResult } from './Tool';
 import type { AISettingsContextType } from '@/contexts/AISettingsContext';
+import { DEFAULT_FAL_FALLBACK_MODEL, isFalProvider } from '@/lib/falai';
 
 interface ConfigureImageGenerationParams {
   modelId: string;
@@ -17,7 +18,7 @@ interface ProviderModel {
 }
 
 export class ConfigureImageGenerationTool implements Tool<ConfigureImageGenerationParams> {
-  readonly description = 'Configure the AI model to use for image generation. The modelId must be a complete model identifier in the format "provider/model" (e.g., "openrouter/openai/gpt-image-1", "openai/dall-e-3", or "shakespeare/gpt-image-1"). You can optionally call view_available_models first to see available image models, but any valid model ID from a configured provider will work. Prefer gpt-image-1 as the first choice, followed by gemini-3-pro-image, unless the user has specific requirements.';
+  readonly description = 'Configure the AI model to use for image generation. The modelId must be a complete model identifier in the format "provider/model" (e.g., "openrouter/openai/gpt-image-1", "openai/dall-e-3", "shakespeare/gpt-image-1", or "fal/openai/gpt-image-2.5/flare/text-to-image" for fal.ai — fal.ai model paths contain multiple slashes). You can optionally call view_available_models first to see available image models, but any valid model ID from a configured provider will work. If a fal.ai provider is configured, prefer its fal.ai model paths. Otherwise prefer gpt-image-1 as the first choice, followed by gemini-3-pro-image, unless the user has specific requirements.';
 
   readonly inputSchema = z.object({
     modelId: z.string().describe('The complete model identifier in "provider/model" format (e.g., "openrouter/openai/gpt-image-1", "openai/dall-e-3").'),
@@ -41,6 +42,14 @@ export class ConfigureImageGenerationTool implements Tool<ConfigureImageGenerati
 
     // Update the settings
     this.aiSettings.updateSettings({ imageModel: modelId });
+
+    // When configuring a fal.ai model, also preset the fallback model path
+    // (fal.ai generation automatically falls back to it on failure)
+    const providerId = modelId.slice(0, modelId.indexOf('/'));
+    const provider = this.aiSettings.settings.providers.find(p => p.id === providerId);
+    if (provider && isFalProvider(provider) && !this.aiSettings.settings.imageModelFallback) {
+      this.aiSettings.updateSettings({ imageModelFallback: `${provider.id}/${DEFAULT_FAL_FALLBACK_MODEL}` });
+    }
 
     let response = `✅ Successfully configured image generation!\n\n`;
     response += `**Image Model**: ${modelId}\n`;

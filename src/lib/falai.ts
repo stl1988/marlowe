@@ -21,6 +21,48 @@ export function isFalProvider(provider: AIProvider): boolean {
   }
 }
 
+/** Synthetic model-list entry for a fal.ai model path (fal.ai has no OpenAI-style /models endpoint). */
+export interface FalImageModelInfo {
+  id: string;
+  type: 'image';
+  name: string;
+  provider: string;
+  fullId: string;
+}
+
+/**
+ * Build model-list entries for a configured fal.ai provider, covering the
+ * preset main/fallback paths plus any custom paths stored in settings.
+ * This lets fal.ai models show up in model listings (e.g. the
+ * view_available_models tool) even though they can't be fetched from an API.
+ */
+export function getFalImageModels(
+  provider: AIProvider,
+  ...configured: Array<string | undefined>
+): FalImageModelInfo[] {
+  const prefix = `${provider.id}/`;
+  const paths = new Set<string>([DEFAULT_FAL_MAIN_MODEL, DEFAULT_FAL_FALLBACK_MODEL]);
+
+  for (const value of configured) {
+    if (value?.startsWith(prefix)) {
+      paths.add(value.slice(prefix.length));
+    }
+  }
+
+  const names: Record<string, string> = {
+    [DEFAULT_FAL_MAIN_MODEL]: 'GPT Image 2.5 Flare',
+    [DEFAULT_FAL_FALLBACK_MODEL]: 'Seedream 4.0',
+  };
+
+  return [...paths].map((path) => ({
+    id: path,
+    type: 'image' as const,
+    name: names[path] ?? path,
+    provider: provider.id,
+    fullId: `${prefix}${path}`,
+  }));
+}
+
 export interface FalImageParams {
   prompt: string;
   output_format?: 'png' | 'jpeg' | 'webp';

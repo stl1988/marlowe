@@ -1,5 +1,13 @@
 # Changelog
 
+## [10.10.1] - 2026-09-10
+
+### Fixed
+- **fal.ai not recognized for image generation when it is the only configured provider**: if a fal.ai provider was configured but `imageModel` was never persisted (e.g. the provider was added via settings sync or before the preset logic existed), the `generate_image` tool was not offered and the AI fell back to `configure_image_generation` — whose model list contains no fal.ai models (fal.ai has no OpenAI-compatible `/models` endpoint) and whose description steered it to `gpt-image-1` over Shakespeare AI. Now: (1) the fal.ai preset main model is used as the effective image model whenever a fal.ai provider is configured and no image model is set, so `generate_image` is available immediately; (2) fal.ai model paths (presets + any custom paths from settings) are surfaced as synthetic entries in `view_available_models`, marked as image models; (3) `configure_image_generation`'s guidance mentions fal.ai paths and prefers them when a fal.ai provider is configured, and configuring a fal.ai model also presets the fallback path; (4) an unparseable/stale `imageModel` (e.g. pointing at a removed provider) now falls through to the configuration tools instead of leaving neither tool available.
+
+### Changed
+- **System prompt**: the Image Generation section now notes that fal.ai is supported (non-OpenAI-compatible), that its main/fallback model paths are used automatically when configured, and that multi-slash fal.ai model paths are valid image model IDs.
+
 ## [10.10.0] - 2026-09-10
 
 ### Added
