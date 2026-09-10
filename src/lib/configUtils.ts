@@ -184,8 +184,17 @@ export async function readAISettings(fs: JSRuntimeFS, configPath = '/config'): P
     const data = JSON.parse(content);
     const parsed = aiSettingsSchema.parse(data);
 
+    // Drop image model settings pointing at a provider that isn't configured —
+    // they can never work, and clearing them lets the fal.ai preset or the
+    // configuration tools take over.
+    const providerIds = new Set(parsed.providers.map((p) => p.id));
+    const providerExists = (providerModel?: string) =>
+      !providerModel || providerIds.has(providerModel.slice(0, providerModel.indexOf('/')));
+
     return {
       ...parsed,
+      imageModel: providerExists(parsed.imageModel) ? parsed.imageModel : undefined,
+      imageModelFallback: providerExists(parsed.imageModelFallback) ? parsed.imageModelFallback : undefined,
       providers: parsed.providers.map((provider) => {
         let name = provider.name;
 

@@ -71,7 +71,7 @@ import { ToolsDialog } from '@/components/Shakespeare/ToolsDialog';
 import { buildMessageContent } from '@/lib/buildMessageContent';
 import { DotAI } from '@/lib/DotAI';
 import { parseProviderModel } from '@/lib/parseProviderModel';
-import { DEFAULT_FAL_FALLBACK_MODEL, DEFAULT_FAL_MAIN_MODEL, getFalImageModels, isFalProvider } from '@/lib/falai';
+import { DEFAULT_FAL_FALLBACK_MODEL, getFalImageModels, isFalProvider, resolveImageModel } from '@/lib/falai';
 import type { AIProvider } from '@/contexts/AISettingsContext';
 import type { ImageGenerationTarget } from '@/lib/tools/GenerateImageTool';
 import { AIMessage } from '@/lib/SessionManager';
@@ -276,8 +276,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
     // Resolve the effective image model: the explicit setting, or the fal.ai
     // preset main model when a fal.ai provider is configured (the paths are
     // preset in Settings > AI and may never have been persisted)
-    const effectiveImageModel = settings.imageModel
-      ?? (falProvider ? `${falProvider.id}/${DEFAULT_FAL_MAIN_MODEL}` : undefined);
+    const { main: effectiveImageModel, fallback: fallbackImageModel } = resolveImageModel(settings);
 
     let imageTarget: { provider: AIProvider; model: string; mode: 'chat' | 'image' } | undefined;
 
@@ -316,9 +315,9 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
 
       // Resolve the fallback image model (used when the main model fails)
       let fallback: ImageGenerationTarget | undefined;
-      if (settings.imageModelFallback) {
+      if (fallbackImageModel) {
         try {
-          const parsed = parseProviderModel(settings.imageModelFallback, settings.providers);
+          const parsed = parseProviderModel(fallbackImageModel, settings.providers);
           fallback = { provider: parsed.provider, model: parsed.model };
         } catch (fallbackError) {
           console.warn('Failed to parse imageModelFallback:', fallbackError);

@@ -1,5 +1,11 @@
 # Changelog
 
+## [10.10.2] - 2026-09-10
+
+### Fixed
+- **System prompt out of sync with actual image generation**: the system prompt received the raw `imageModel` setting while the chat tools resolved the fal.ai preset separately — so when only fal.ai was configured (and `imageModel` unset), new chats were told "Image Model Status: Not configured" even though the `generate_image` tool was available, and the AI never knew it was using fal.ai. Both now share a single resolver (`resolveImageModel()` in `src/lib/falai.ts`): the prompt shows the effective model — "Configured Image Model: fal/openai/gpt-image-2.5/flare/text-to-image (fallback: fal/fal-ai/bytedance/seedream/v4/text-to-image — used automatically if the main model fails)" — matching what the tools actually use. The prompt is re-rendered every turn, so existing chats pick up the correction on the next message.
+- **Stale image model settings are self-healing**: `readAISettings` now drops `imageModel`/`imageModelFallback` values that point at a provider which is no longer configured (they could never work); clearing them lets the fal.ai preset or the configuration tools take over.
+
 ## [10.10.1] - 2026-09-10
 
 ### Fixed

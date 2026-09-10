@@ -3,6 +3,7 @@ import type { Decimal } from 'decimal.js';
 import type { JSRuntimeFS } from './JSRuntime';
 import { DotAI } from './DotAI';
 import { parseProviderModel } from './parseProviderModel';
+import { resolveImageModel } from './falai';
 import { createAIClient } from './ai-client';
 import type { Tool } from './tools/Tool';
 import type { NUser } from '@nostrify/react/login';
@@ -67,7 +68,7 @@ export class SessionManager {
   private listeners: Partial<Record<keyof SessionManagerEvents, Set<(...args: unknown[]) => void>>> = {};
   private fs: JSRuntimeFS;
   private nostr: NPool;
-  private getSettings: () => { providers: AIProvider[]; imageModel?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> };
+  private getSettings: () => { providers: AIProvider[]; imageModel?: string; imageModelFallback?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> };
   private getConfig: () => AppConfig;
   private getDefaultConfig: () => AppConfig;
   private getProviderModels?: () => Array<{ id: string; provider: string; contextLength?: number; pricing?: { prompt: Decimal; completion: Decimal } }>;
@@ -76,7 +77,7 @@ export class SessionManager {
   constructor(
     fs: JSRuntimeFS,
     nostr: NPool,
-    getSettings: () => { providers: AIProvider[]; imageModel?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> },
+    getSettings: () => { providers: AIProvider[]; imageModel?: string; imageModelFallback?: string; modelThinkingLevels?: Record<string, import('@/contexts/AISettingsContext').ThinkingLevel> },
     getConfig: () => AppConfig,
     getDefaultConfig: () => AppConfig,
     getProviderModels?: () => Array<{ id: string; provider: string; contextLength?: number; pricing?: { prompt: Decimal; completion: Decimal } }>,
@@ -325,7 +326,8 @@ export class SessionManager {
           projectTemplate,
           model: modelInfo,
           provider: providerInfo,
-          imageModel: settings.imageModel,
+          imageModel: resolveImageModel(settings).main,
+          imageModelFallback: resolveImageModel(settings).fallback,
           economyMode,
         });
 

@@ -63,6 +63,37 @@ export function getFalImageModels(
   }));
 }
 
+/** Effective image model configuration (main + fallback), in provider/model format. */
+export interface ResolvedImageModel {
+  main?: string;
+  fallback?: string;
+}
+
+/**
+ * Resolve the effective image model settings. When no image model is
+ * configured but a fal.ai provider exists, the fal.ai preset main model is
+ * used (fal.ai paths are preset in Settings > AI and may never have been
+ * persisted). fal.ai mains also get the preset fallback when none is set.
+ */
+export function resolveImageModel(settings: {
+  providers: AIProvider[];
+  imageModel?: string;
+  imageModelFallback?: string;
+}): ResolvedImageModel {
+  const falProvider = settings.providers.find(isFalProvider);
+  const main = settings.imageModel ?? (falProvider ? `${falProvider.id}/${DEFAULT_FAL_MAIN_MODEL}` : undefined);
+
+  let fallback = settings.imageModelFallback;
+  if (!fallback && falProvider && main?.startsWith(`${falProvider.id}/`)) {
+    const mainPath = main.slice(falProvider.id.length + 1);
+    if (mainPath !== DEFAULT_FAL_FALLBACK_MODEL) {
+      fallback = `${falProvider.id}/${DEFAULT_FAL_FALLBACK_MODEL}`;
+    }
+  }
+
+  return { main, fallback };
+}
+
 export interface FalImageParams {
   prompt: string;
   output_format?: 'png' | 'jpeg' | 'webp';

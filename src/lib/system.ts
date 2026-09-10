@@ -35,6 +35,7 @@ export interface MakeSystemPromptOpts {
   model: ModelInfo;
   provider: ProviderInfo;
   imageModel?: string;
+  imageModelFallback?: string;
   /** When true, append credit-saving instructions to the system prompt */
   economyMode?: boolean;
 }
@@ -190,7 +191,7 @@ When a project is first created, you (the AI) choose an appropriate template fro
 
 Marlowe supports AI-powered image generation. Users can configure an image model in **Settings > AI** under the "Advanced" section.
 
-{% if imageModel %}- **Configured Image Model**: {{ imageModel }}{% else %}- **Image Model Status**: Not configured{% endif %}
+{% if imageModel %}- **Configured Image Model**: {{ imageModel }}{% if imageModelFallback %} (fallback: {{ imageModelFallback }} — used automatically if the main model fails){% endif %}{% else %}- **Image Model Status**: Not configured{% endif %}
 
 **Important Notes:**
 - Not all models support image generation. If users experience issues with image generation, they should try selecting a different image model in Settings > AI
@@ -347,7 +348,7 @@ Users can also manage their app listing manually through the **App** option in t
 {{ AGENTS }}{% endif %}`;
 
 export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<string> {
-  const { tools, mode, fs, cwd, config, defaultConfig, user, metadata, repositoryUrl, template, projectTemplate, model, provider, imageModel, economyMode } = opts;
+  const { tools, mode, fs, cwd, config, defaultConfig, user, metadata, repositoryUrl, template, projectTemplate, model, provider, imageModel, imageModelFallback, economyMode } = opts;
 
   // Add current date
   const date = new Date().toLocaleDateString("en-US", {
@@ -494,6 +495,7 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     model,
     provider,
     imageModel,
+    imageModelFallback,
   };
 
   // Render the template with the context
