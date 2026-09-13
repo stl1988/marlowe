@@ -1,5 +1,14 @@
 # Changelog
 
+## [10.11.0] - 2026-09-13
+
+### Added
+- **Download built site (dist) as ZIP**: a project's build output lands in its `dist/` folder — it can now be downloaded on its own without exporting the whole project, from two places:
+  - a Download button next to the Build button in the preview toolbar (enabled once the project has been built), and
+  - a "Download Build (dist)" button in the Project Details dialog (disabled until a build exists).
+
+  The ZIP contains the *contents* of `dist/` at its root, ready to upload to any static host. New shared helper `src/lib/zipExport.ts` (`downloadFolderAsZip`) which the existing "Export Project" button now uses as well. Fully translated into all 12 UI languages.
+
 ## [10.10.2] - 2026-09-10
 
 ### Fixed

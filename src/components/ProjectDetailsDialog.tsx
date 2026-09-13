@@ -35,7 +35,7 @@ import { Switch } from '@/components/ui/switch';
 import { useEconomyMode } from '@/hooks/useEconomyMode';
 import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
 import { cn } from '@/lib/utils';
-import JSZip from 'jszip';
+import { downloadFolderAsZip } from '@/lib/zipExport';
 
 interface ProjectDetailsDialogProps {
   project: Project;
@@ -47,6 +47,8 @@ interface ProjectDetailsDialogProps {
 export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDeleted }: ProjectDetailsDialogProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isDownloadingDist, setIsDownloadingDist] = useState(false);
+  const [hasBuild, setHasBuild] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [newProjectName, setNewProjectName] = useState(project.id);
   const [totalCost, setTotalCost] = useState<number | null>(null);
@@ -91,10 +93,19 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
         // Load template info
         const template = await dotAI.readTemplate();
         setTemplateInfo(template);
+
+        // Check if a build exists (dist/index.html)
+        try {
+          const distStat = await fs.stat(`${projectsPath}/${project.id}/dist/index.html`);
+          setHasBuild(distStat.isFile());
+        } catch {
+          setHasBuild(false);
+        }
       } catch (error) {
         console.warn('Failed to load project data:', error);
         setTotalCost(null);
         setTemplateInfo(null);
+        setHasBuild(false);
       } finally {
         setIsLoading(false);
       }
@@ -187,53 +198,7 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
   const handleExportProject = async () => {
     setIsExporting(true);
     try {
-      const zip = new JSZip();
-      const projectPath = `${projectsPath}/${project.id}`;
-
-      // Recursive function to add files and directories to zip from a specific project
-      const addFolderToZip = async (dirPath: string, zipFolder: JSZip) => {
-        try {
-          const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-          for (const entry of entries) {
-            const fullPath = `${dirPath}/${entry.name}`;
-
-            if (entry.isDirectory()) {
-              // Create folder in zip and recursively add its contents
-              const folder = zipFolder.folder(entry.name);
-              if (folder) {
-                await addFolderToZip(fullPath, folder);
-              }
-            } else if (entry.isFile()) {
-              // Add file to zip
-              try {
-                const fileContent = await fs.readFile(fullPath);
-                zipFolder.file(entry.name, fileContent);
-              } catch (error) {
-                console.warn(`Failed to read file ${fullPath}:`, error);
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to read directory ${dirPath}:`, error);
-        }
-      };
-
-      // Start from the project directory
-      await addFolderToZip(projectPath, zip);
-
-      // Generate zip file
-      const content = await zip.generateAsync({ type: 'blob' });
-
-      // Create download link
-      const url = URL.createObjectURL(content);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project.id}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      await downloadFolderAsZip(fs, `${projectsPath}/${project.id}`, `${project.id}.zip`);
 
       toast({
         title: "Project exported successfully",
@@ -248,6 +213,27 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
       });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleDownloadDist = async () => {
+    setIsDownloadingDist(true);
+    try {
+      await downloadFolderAsZip(fs, `${projectsPath}/${project.id}/dist`, `${project.id}-dist.zip`);
+
+      toast({
+        title: "Build downloaded successfully",
+        description: `The contents of the dist folder have been downloaded as ${project.id}-dist.zip.`,
+      });
+    } catch (error) {
+      console.error('Failed to download dist folder:', error);
+      toast({
+        title: "Failed to download build",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingDist(false);
     }
   };
 
@@ -377,6 +363,22 @@ export function ProjectDetailsDialog({ project, open, onOpenChange, onProjectDel
               <Download className="h-4 w-4" />
             )}
             {isExporting ? 'Exporting...' : 'Export Project'}
+          </Button>
+
+          {/* Download Build (dist) Button */}
+          <Button
+            onClick={handleDownloadDist}
+            disabled={isDownloadingDist || isExporting || isDeleting || isRenaming || !hasBuild}
+            className="w-full gap-2"
+            variant="outline"
+            title={hasBuild ? 'Download the built website (contents of the dist folder) as a zip file' : 'Build the project first to download the dist folder'}
+          >
+            {isDownloadingDist ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {isDownloadingDist ? 'Downloading...' : 'Download Build (dist)'}
           </Button>
 
           {/* Delete Project Button */}

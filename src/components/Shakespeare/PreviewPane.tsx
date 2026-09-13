@@ -10,7 +10,7 @@ import { useBuildProject } from '@/hooks/useBuildProject';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { FolderOpen, ArrowLeft, Bug, Copy, Check, Loader2, Code, X, Terminal, Expand, Shrink, Hammer, RefreshCw, Trash2 } from 'lucide-react';
+import { FolderOpen, ArrowLeft, Bug, Copy, Check, Loader2, Code, X, Terminal, Expand, Shrink, Hammer, RefreshCw, Trash2, Download } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { GitStatusIndicator } from '@/components/GitStatusIndicator';
 import { BranchSwitcher } from '@/components/BranchSwitcher';
@@ -26,6 +26,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { isMediaFile } from '@/lib/fileUtils';
 import { deriveIframeSubdomain } from '@/lib/iframeSubdomain';
+import { downloadFolderAsZip } from '@/lib/zipExport';
+import { useToast } from '@/hooks/useToast';
 import { getPreviewInjectedScript } from '@/lib/previewInjectedScript';
 
 interface PreviewPaneProps {
@@ -83,6 +85,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
   const [desktopCodeView, setDesktopCodeView] = useState<'files' | 'terminal'>('files');
   const isMobile = useIsMobile();
   const [hasBuiltProject, setHasBuiltProject] = useState(false);
+  const [isDownloadingDist, setIsDownloadingDist] = useState(false);
   const [buildError, setBuildError] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState('/');
   const [navigationHistory, setNavigationHistory] = useState<string[]>(['/']);
@@ -107,6 +110,8 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
 
   // Use console error state from provider
   const { hasErrors: hasConsoleErrors, clearErrors } = useConsoleError();
+
+  const { toast } = useToast();
 
   const { mutate: buildProject, isPending: isBuildLoading } = useBuildProject(projectId);
 
@@ -192,6 +197,27 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
       setHasBuiltProject(false);
     }
   }, [projectId, projectsManager]);
+
+  // Download the built site (dist folder contents) as a ZIP archive
+  const handleDownloadDist = useCallback(async () => {
+    setIsDownloadingDist(true);
+    try {
+      await downloadFolderAsZip(fs, `${projectsPath}/${projectId}/dist`, `${projectId}-dist.zip`);
+      toast({
+        title: t('distDownloaded'),
+        description: t('distDownloadedDescription'),
+      });
+    } catch (error) {
+      console.error('Failed to download dist folder:', error);
+      toast({
+        title: t('failedToDownloadDist'),
+        description: error instanceof Error ? error.message : t('buildProjectFirst'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloadingDist(false);
+    }
+  }, [fs, projectsPath, projectId, toast, t]);
 
 
 
@@ -675,6 +701,22 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                       <Hammer className="h-4 w-4" />
                     )}
                     <span className="hidden lg:inline">Build</span>
+                  </Button>
+                  {/* Download built site (dist folder) button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownloadDist}
+                    disabled={isDownloadingDist || !hasBuiltProject}
+                    className="h-8 gap-2"
+                    title={t('downloadDistTooltip')}
+                  >
+                    {isDownloadingDist ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    <span className="hidden lg:inline">{t('downloadDistButton')}</span>
                   </Button>
                   {(!isMobile && onToggleView && isPreviewable) && (
                     <Button
