@@ -1,5 +1,16 @@
 # Changelog
 
+## [10.12.0] - 2026-09-14
+
+### Changed
+- **shakespeare.wtf deployment ported to the npanel gateway** (upstream Shakespeare commits `fc26a8b2`, `cb5561ba`, `d06b9235`, `dbb90df2`, `344a73c6`): the old Shakespeare Deploy host was replaced upstream — it now serves those domains out of nsite manifests, so deploys through the old zip-upload API were succeeding while changing nothing anyone could see. The `shakespeare` provider type is gone; `ShakespeareAdapter`/`ShakespeareDeployForm` are replaced by:
+  - **`NpanelAdapter`** (`src/lib/deploy/NpanelAdapter.ts`): deploys the site as an ordinary nsite (kind 35128, via `NsiteAdapter`, under the user's own key — readable by any nsite client), then asks the gateway (NIP-98, `src/lib/deploy/npanelApi.ts`) to point the chosen `*.shakespeare.wtf` hostname at it, with check-before-claim semantics (free vs. mine vs. somebody else's).
+  - **Live name availability** in the deploy form (`NpanelDeployForm`): checked as you type, anonymously first; a taken name is re-asked with a signature so your *own* names don't read as "taken", and a name held for you offers the take-back flow instead of a dead end.
+  - **Site take-back flow** (`NpanelMigrationDialog`, `useNpanelClaims`, `npanelMigration.ts`): names published under the pre-gateway host are listed with a per-name plan (repoint only / republish archive / blocked), migrated in one pass; already-claimed names get title fixes from the site's own webmanifest metadata and relay-coverage repair (re-sending the exact signed events to the relays missing them, no re-signing). Settings → Deploy shows a count card when names are waiting; the deploy error for a held name carries the same offer.
+  - **Settings migration, not loss**: `shakespeare`-type providers and per-project deploy records are migrated to `npanel` on load (`migrateDeployProvider`); `readDeploySettings` now distinguishes a missing file (new users get the Shakespeare gateway preconfigured — the default previously never reached anybody) from an unreadable one (returns nothing rather than silently replacing the user's config).
+  - **Per-relay publish reporting** (`publishToRelays.ts`): nsite manifests are published relay-by-relay instead of "first acceptance wins", and the deploy result reports which relays accepted/rejected. Marlowe's NsiteAdapter enhancements (source-map skipping, size-scaled upload timeouts, per-Blossom-server upload report, signer retry) are preserved.
+  - Also from upstream: ProviderConfigDialog's fields now scroll so the Save button stays reachable, and custom "nsite gateway" providers can be added with domain + gateway API + relay/Blossom lists.
+
 ## [10.11.0] - 2026-09-13
 
 ### Added

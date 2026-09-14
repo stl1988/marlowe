@@ -74,18 +74,16 @@ export function ProviderConfigDialog({
   // Use baseURL from configured provider, falling back to preset baseURL
   const baseURL = ('baseURL' in localProvider && localProvider.baseURL) || preset?.baseURL;
 
-  // For Shakespeare, special handling for host field
-  const shakespeareUrl = localProvider.type === 'shakespeare' && 'host' in localProvider && localProvider.host
-    ? normalizeUrl(localProvider.host)
-    : undefined;
+  // A gateway is recognised by the domain it serves, not by its API origin
+  const gatewayUrl = localProvider.type === 'npanel' ? normalizeUrl(localProvider.domain) : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[min(700px,85dvh)] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2">
             <ExternalFavicon
-              url={shakespeareUrl || baseURL}
+              url={gatewayUrl || baseURL}
               size={20}
               fallback={<Rocket size={20} />}
             />
@@ -96,7 +94,10 @@ export function ProviderConfigDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        {/* The fields scroll, the buttons don't: a provider with relay and
+            blossom lists is taller than a phone, and a Save button below the
+            fold is a Save button nobody can press. */}
+        <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1 -mx-1">
           <div className="grid gap-2">
             <Label htmlFor="provider-name">
               Name <span className="text-destructive">*</span>
@@ -109,22 +110,55 @@ export function ProviderConfigDialog({
             />
           </div>
 
-          {localProvider.type === 'shakespeare' ? (
+          {localProvider.type === 'npanel' ? (
             <>
               <p className="text-sm text-muted-foreground">
                 {t('shakespeareDeployNostrAuth')}
               </p>
               <div className="grid gap-2">
-                <Label htmlFor="provider-host">
-                  Host (Optional)
+                <Label htmlFor="provider-domain">
+                  Domain <span className="text-destructive">*</span>
                 </Label>
                 <Input
-                  id="provider-host"
+                  id="provider-domain"
                   placeholder="shakespeare.wtf"
-                  value={localProvider.host || ''}
-                  onChange={(e) => setLocalProvider({ ...localProvider, host: e.target.value })}
+                  value={localProvider.domain}
+                  onChange={(e) => setLocalProvider({ ...localProvider, domain: e.target.value })}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Sites get a name under this domain.
+                </p>
               </div>
+              <div className="grid gap-2">
+                <Label htmlFor="provider-dashboard-host">
+                  Gateway API <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="provider-dashboard-host"
+                  placeholder="npanel.shakespeare.to"
+                  value={localProvider.dashboardHost}
+                  onChange={(e) => setLocalProvider({ ...localProvider, dashboardHost: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Where names are claimed. Usually a different host from the one above.
+                </p>
+              </div>
+              <UrlListEditor
+                label="Relay URLs"
+                items={localProvider.relayUrls ?? []}
+                onChange={(urls) => setLocalProvider({ ...localProvider, relayUrls: urls })}
+                protocol="wss"
+                placeholder="relay.ditto.pub"
+                required
+              />
+              <UrlListEditor
+                label="Blossom Servers"
+                items={localProvider.blossomServers ?? []}
+                onChange={(servers) => setLocalProvider({ ...localProvider, blossomServers: servers })}
+                protocol="https"
+                placeholder="blossom.ditto.pub"
+                required
+              />
             </>
           ) : localProvider.type === 'nsite' ? (
             <>
@@ -272,7 +306,7 @@ export function ProviderConfigDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 shrink-0">
           <Button
             variant="destructive"
             onClick={handleDelete}

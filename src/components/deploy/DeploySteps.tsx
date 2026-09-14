@@ -17,10 +17,11 @@ import { useNostrPublish } from '@/hooks/useNostrPublish';
 import { useGit } from '@/hooks/useGit';
 import { NostrURI } from '@/lib/NostrURI';
 import { Link } from 'react-router-dom';
-import type { DeployProvider } from '@/contexts/DeploySettingsContext';
+import type { DeployProvider, NpanelProvider } from '@/contexts/DeploySettingsContext';
+import { NpanelMigrationDialog } from '@/components/deploy/NpanelMigrationDialog';
 import type { PresetDeployProvider } from '@/lib/deploy/types';
 import { PRESET_DEPLOY_PROVIDERS } from '@/lib/deployProviderPresets';
-import { ShakespeareDeployForm } from '@/components/deploy/ShakespeareDeployForm';
+import { NpanelDeployForm } from '@/components/deploy/NpanelDeployForm';
 import { NetlifyDeployForm } from '@/components/deploy/NetlifyDeployForm';
 import { VercelDeployForm } from '@/components/deploy/VercelDeployForm';
 import { NsiteDeployForm } from '@/components/deploy/NsiteDeployForm';
@@ -29,7 +30,7 @@ import { DenoDeployForm } from '@/components/deploy/DenoDeployForm';
 import { RailwayDeployForm } from '@/components/deploy/RailwayDeployForm';
 import { cn } from '@/lib/utils';
 import { DeployAdapter } from '@/lib/deploy/types';
-import { ShakespeareAdapter } from '@/lib/deploy/ShakespeareAdapter';
+import { NpanelAdapter } from '@/lib/deploy/NpanelAdapter';
 import { NsiteAdapter } from '@/lib/deploy/NsiteAdapter';
 import { NetlifyAdapter } from '@/lib/deploy/NetlifyAdapter';
 import { VercelAdapter } from '@/lib/deploy/VercelAdapter';
@@ -74,12 +75,11 @@ function renderProviderIcon(provider: DeployProvider, preset: PresetDeployProvid
   // Use baseURL from configured provider, falling back to preset baseURL
   const baseURL = ('baseURL' in provider && provider.baseURL) || preset?.baseURL;
 
-  // For Shakespeare, special handling for host field
-  const shakespeareUrl = provider.type === 'shakespeare' && 'host' in provider && provider.host
-    ? normalizeUrl(provider.host)
-    : undefined;
+  // A gateway is recognised by the domain it serves, not by its API origin —
+  // that is the name the user picked it for and the one with an icon.
+  const gatewayUrl = provider.type === 'npanel' ? normalizeUrl(provider.domain) : undefined;
 
-  const url = shakespeareUrl || baseURL;
+  const url = gatewayUrl || baseURL;
 
   if (url) {
     return (
@@ -100,8 +100,10 @@ interface DeployStepsProps {
   onClose: () => void;
 }
 
-interface ShakespeareFormData {
+interface NpanelFormData {
   subdomain: string;
+  siteTitle: string;
+  siteDescription: string;
 }
 
 interface NsiteFormData {
@@ -153,7 +155,25 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployResult, setDeployResult] = useState<{ url: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isShakespeareFormValid, setIsShakespeareFormValid] = useState(true);
+  const [isNpanelFormValid, setIsNpanelFormValid] = useState(true);
+  /**
+   * The gateway whose held names are being looked at, if any.
+   *
+   * Owned here rather than by the name field, because what someone recognising
+   * one of their names wants is usually all of them, and because the dialog
+   * that hands them back outlives the field that prompted it.
+   */
+  const [migratingProvider, setMigratingProvider] = useState<NpanelProvider | null>(null);
+
+  /**
+   * Whether the deploy failed because the gateway is holding the name for this
+   * user, which is a refusal with something to do about it.
+   *
+   * Read off the sentence npanel sent rather than a status code, since the 409
+   * it arrives as also covers a name somebody else holds and a name that is
+   * simply configured already.
+   */
+  const heldName = error !== null && /being held for you/i.test(error);
 
   // .nsite/config.json state — loaded once on mount, used to skip config form on re-deploy
   const [nsiteVfsConfig, setNsiteVfsConfig] = useState<NsiteVfsConfig | null>(null);
@@ -190,8 +210,10 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
   }, [fs, projectsPath, projectId]);
 
   // Provider-specific form data
-  const [shakespeareForm, setShakespeareForm] = useState<ShakespeareFormData>({
+  const [npanelForm, setNpanelForm] = useState<NpanelFormData>({
     subdomain: projectId,
+    siteTitle: projectName || projectId,
+    siteDescription: '',
   });
   const [nsiteForm, setNsiteForm] = useState<NsiteFormData>({
     siteType: 'named',
@@ -249,18 +271,36 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
 
       let adapter: DeployAdapter;
 
-      if (selectedProvider.type === 'shakespeare') {
+      if (selectedProvider.type === 'npanel') {
         if (!user) {
-          throw new Error('You must be logged in with Nostr to use Shakespeare Deploy');
+          throw new Error('You must be logged in with Nostr to deploy here.');
         }
 
-        const shakespeareProvider = selectedProvider;
-        adapter = new ShakespeareAdapter({
+        const npanelProvider = selectedProvider;
+        const subdomain = npanelForm.subdomain.trim();
+        if (!subdomain) {
+          throw new Error('Choose an address for this site.');
+        }
+
+        const sourceUrl = await resolveNsiteSourceUrl(
+          await git.getRemoteURL(projectPath, 'origin')
+        );
+
+        adapter = new NpanelAdapter({
           fs,
+          nostr,
           signer: user.signer,
-          host: shakespeareProvider.host,
-          subdomain: shakespeareForm.subdomain || undefined,
-          corsProxy: shakespeareProvider.proxy ? config.corsProxy : undefined,
+          dashboardHost: npanelProvider.dashboardHost,
+          domain: npanelProvider.domain,
+          subdomain,
+          // The gateway serves the site, so it is also the gateway whose URL the
+          // underlying nsite deploy reports.
+          gateway: npanelProvider.domain,
+          relayUrls: npanelProvider.relayUrls,
+          blossomServers: npanelProvider.blossomServers,
+          siteTitle: npanelForm.siteTitle || undefined,
+          siteDescription: npanelForm.siteDescription || undefined,
+          sourceUrl,
         });
       } else if (selectedProvider.type === 'nsite') {
         const nsiteProvider = selectedProvider;
@@ -380,12 +420,14 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
       });
 
       // Save project-specific settings (updateSettings now automatically sets currentProvider)
-      if (selectedProvider.type === 'shakespeare') {
+      if (selectedProvider.type === 'npanel') {
         await updateProjectSettings(selectedProviderId, {
-          type: 'shakespeare',
+          type: 'npanel',
           url: result.url,
           data: {
-            subdomain: shakespeareForm.subdomain || undefined,
+            subdomain: npanelForm.subdomain.trim() || undefined,
+            siteTitle: npanelForm.siteTitle || undefined,
+            siteDescription: npanelForm.siteDescription || undefined,
           },
         });
       } else if (selectedProvider.type === 'nsite') {
@@ -522,7 +564,7 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
     setDeployResult(null);
     setError(null);
     // Reset forms
-    setShakespeareForm({ subdomain: projectId });
+    setNpanelForm({ subdomain: projectId, siteTitle: projectName || projectId, siteDescription: '' });
     setNsiteForm({ siteType: 'named', siteTitle: '', siteDescription: '', dTag: '' });
     setNetlifyForm({ siteId: '', siteName: '' });
     setVercelForm({ projectName: projectName || projectId, teamId: '' });
@@ -534,12 +576,20 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
     onClose();
   };
 
-  const handleShakespeareSubdomainChange = useCallback((subdomain: string) => {
-    setShakespeareForm({ subdomain });
+  const handleNpanelSubdomainChange = useCallback((subdomain: string) => {
+    setNpanelForm(prev => ({ ...prev, subdomain }));
   }, []);
 
-  const handleShakespeareValidationChange = useCallback((isValid: boolean) => {
-    setIsShakespeareFormValid(isValid);
+  const handleNpanelSiteTitleChange = useCallback((siteTitle: string) => {
+    setNpanelForm(prev => ({ ...prev, siteTitle }));
+  }, []);
+
+  const handleNpanelSiteDescriptionChange = useCallback((siteDescription: string) => {
+    setNpanelForm(prev => ({ ...prev, siteDescription }));
+  }, []);
+
+  const handleNpanelValidationChange = useCallback((isValid: boolean) => {
+    setIsNpanelFormValid(isValid);
   }, []);
 
   const handleNsiteSiteTypeChange = useCallback((siteType: 'root' | 'named') => {
@@ -588,18 +638,26 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
   const renderProviderFields = () => {
     if (!selectedProvider) return null;
 
-    if (selectedProvider.type === 'shakespeare') {
-      const shakespeareProvider = selectedProvider;
+    if (selectedProvider.type === 'npanel') {
+      const npanelProvider = selectedProvider;
       const savedConfig = projectSettings.providers[selectedProviderId];
-      const savedSubdomain = savedConfig?.type === 'shakespeare' ? savedConfig.data.subdomain : undefined;
+      const saved = savedConfig?.type === 'npanel' ? savedConfig.data : undefined;
 
       return (
-        <ShakespeareDeployForm
-          host={shakespeareProvider.host}
+        <NpanelDeployForm
+          key={selectedProviderId}
+          dashboardHost={npanelProvider.dashboardHost}
+          domain={npanelProvider.domain}
           projectId={projectId}
-          savedSubdomain={savedSubdomain}
-          onSubdomainChange={handleShakespeareSubdomainChange}
-          onValidationChange={handleShakespeareValidationChange}
+          projectName={projectName}
+          savedSubdomain={saved?.subdomain}
+          savedSiteTitle={saved?.siteTitle}
+          savedSiteDescription={saved?.siteDescription}
+          onSubdomainChange={handleNpanelSubdomainChange}
+          onSiteTitleChange={handleNpanelSiteTitleChange}
+          onSiteDescriptionChange={handleNpanelSiteDescriptionChange}
+          onValidationChange={handleNpanelValidationChange}
+          onTakeBackSites={() => setMigratingProvider(npanelProvider)}
         />
       );
     }
@@ -981,11 +1039,11 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
 
               {selectedProvider && renderProviderFields()}
 
-              {selectedProvider?.type === 'shakespeare' && !user && (
+              {selectedProvider?.type === 'npanel' && !user && (
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    You must be logged in with Nostr to use Shakespeare Deploy.{' '}
+                    You must be logged in with Nostr to publish a site.{' '}
                     <Link
                       to="/settings/nostr"
                       className="underline hover:no-underline"
@@ -1016,7 +1074,22 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
               {error && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="space-y-2">
+                    <p>{error}</p>
+                    {/* The gateway refuses a name it is holding for this user
+                        and says to take it back instead. Saying so and leaving
+                        them to find out where is the worst of both. */}
+                    {heldName && selectedProvider?.type === 'npanel' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMigratingProvider(selectedProvider)}
+                      >
+                        Take back your sites
+                      </Button>
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
 
@@ -1025,8 +1098,8 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
                   onClick={handleDeploy}
                   disabled={
                     isDeploying ||
-                    (selectedProvider.type === 'shakespeare' && !user) ||
-                    (selectedProvider.type === 'shakespeare' && !isShakespeareFormValid) ||
+                    (selectedProvider.type === 'npanel' && !user) ||
+                    (selectedProvider.type === 'npanel' && !isNpanelFormValid) ||
                     (selectedProvider.type === 'nsite' && !user) ||
                     (selectedProvider.type === 'nsite' && nsiteForm.siteType === 'named' && !nsiteForm.dTag) ||
                     (selectedProvider.type === 'netlify' && !netlifyForm.siteId && !netlifyForm.siteName) ||
@@ -1052,6 +1125,14 @@ export function DeploySteps({ projectId, projectName, onClose }: DeployStepsProp
             </>
           )}
         </div>
+      )}
+
+      {migratingProvider && (
+        <NpanelMigrationDialog
+          open
+          onOpenChange={(open) => !open && setMigratingProvider(null)}
+          provider={migratingProvider}
+        />
       )}
     </div>
   );

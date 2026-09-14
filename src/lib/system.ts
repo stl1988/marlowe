@@ -115,7 +115,7 @@ The Marlowe interface consists of several key areas:
    - **Preferences** (\`/settings/preferences\`): Theme and language settings
    - **AI Settings** (\`/settings/ai\`): Configure AI providers, API keys, project templates, MCP servers, and plugins
    - **Git Settings** (\`/settings/git\`): Configure Git credentials for version control
-   - **Deploy Settings** (\`/settings/deploy\`): Configure deployment providers (Shakespeare Deploy, Netlify, Vercel, nsite)
+   - **Deploy Settings** (\`/settings/deploy\`): Configure deployment providers (Shakespeare, Netlify, Vercel, nsite)
    - **Nostr Settings** (\`/settings/nostr\`): Manage Nostr accounts, relay connections, and ngit servers
    - **Storage Settings** (\`/settings/storage\`): Export/import project files, manage browser storage
    - **System Settings** (\`/settings/system\`): Advanced configuration (ESM CDN, CORS proxy, service worker, etc.)

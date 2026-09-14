@@ -1,8 +1,8 @@
 # Marlowe
 
-> Marlowe v10.11.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+> Marlowe v10.12.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
 
-Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (nsite, Shakespeare Deploy, Netlify, Vercel, Cloudflare, Railway).
+Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (Shakespeare npanel gateway, nsite, Netlify, Vercel, Cloudflare, Railway).
 
 ## What Makes Marlowe Different from Shakespeare
 
@@ -10,7 +10,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 
 - **Branding**: Marlowe uses a teal/amber color scheme instead of Shakespeare's purple. The logo is a teal quill with a cyan spark. All PWA/install icons are Marlowe assets (`/icon-1024.png`, `/icon-maskable-1024.png`, `/marlowe.svg`, `/marlowe-icon.webp`, `/marlowe-maskable.svg`), with PNG listed first because Android's install-banner/WebAPK icon extractor cannot decode WebP. The Capacitor Android app (`android/`) uses the same Marlowe launcher icon and name.
 - **Deployment URL**: Marlowe is deployed at https://marlowe.shakespeare.wtf and as an nsite at https://47h1rs70oqaspur8bichfzalg0wnassb8d7tslfacl7hwyaxhkmarlowe.nsite.lol
-- **Nostr-first**: Marlowe defaults to nsite (NIP-5A kind 15128/35128) as the primary deployment target, supporting both root sites and named sites. nsite deploys skip `.map` source-map files (development artifacts not needed in production), scale upload timeouts with file size, show a per-server Blossom upload report on the success panel, and report per-server failure reasons when an upload fails.
+- **Nostr-first**: Marlowe defaults to the Shakespeare npanel gateway (`npanel.shakespeare.to`) as the primary deployment target: the site is published as an ordinary nsite manifest (NIP-5A kind 35128) under the user's own key, and the gateway is then asked (NIP-98) to point a `*.shakespeare.wtf` name at it — so the site stays readable by any nsite client even without the gateway. Plain nsite deploys (root sites kind 15128 and named sites kind 35128) are also available. Old `shakespeare`-type provider configs and per-project deploy records are migrated to `npanel` on load, and sites published under the pre-gateway host can be taken back en masse (Settings → Deploy, or right from the deploy dialog when a held name is recognised). nsite deploys skip `.map` source-map files (development artifacts not needed in production), scale upload timeouts with file size, show a per-server Blossom upload report on the success panel, report per-server failure reasons when an upload fails, and publish the manifest relay-by-relay with per-relay acceptance reporting.
 - **System prompt**: The AI assistant introduces itself as "Marlowe" and describes the platform as a Shakespeare fork. Projects built with Marlowe are branded "Vibed with Marlowe".
 - **Opinionated build defaults**: the default system prompt requires new apps/websites to ship with i18n in six languages (English, German, French, Spanish, Italian, Dutch — including a language picker and i18next-native pluralization) unless the user says otherwise; mandates sane Nostr data practices (no sub-second relay query timeouts, streaming event fetching with incremental rendering); and embeds the exact list of available virtual-shell commands (single source of truth: `AVAILABLE_SHELL_COMMAND_NAMES` in `src/lib/commands/names.ts`) so the AI never attempts non-existent commands like `npm` or `node` — package management and builds go through dedicated tools.
 - **Badge**: Marlowe ships its own teal edit badge (`/marlowe-badge.svg`) for use in READMEs and project footers.
@@ -34,13 +34,13 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - **Storage**: LightningFS (IndexedDB-backed virtual filesystem), isomorphic-git
 - **Build pipeline**: esbuild-wasm (in-browser bundler), Tailwind CSS CDN for previews
 - **AI**: OpenAI-compatible API, supports any provider with an OpenAI-compatible endpoint; fal.ai supported natively for image generation
-- **Deployment**: nsite (Nostr/Blossom), Shakespeare Deploy, Netlify, Vercel, Cloudflare Workers, Deno Deploy, Railway
+- **Deployment**: Shakespeare npanel gateway (nsite + NIP-98 hostname claims, serves `*.shakespeare.wtf`), nsite (Nostr/Blossom), Netlify, Vercel, Cloudflare Workers, Deno Deploy, Railway
 
 ## Project Structure
 
 - `src/lib/system.ts` — AI system prompt template (Nunjucks) with Marlowe branding
 - `src/lib/deploy/NsiteAdapter.ts` — nsite v2 deployment (kind 15128 root / kind 35128 named)
-- `src/lib/deploy/ShakespeareAdapter.ts` — Shakespeare Deploy via NIP-98 auth
+- `src/lib/deploy/NpanelAdapter.ts` — npanel gateway deploys: NsiteAdapter plus NIP-98 hostname claim (`src/lib/deploy/npanelApi.ts`); site reclaim planning in `src/lib/deploy/npanelMigration.ts`; per-relay publishing in `src/lib/deploy/publishToRelays.ts`
 - `src/lib/SessionManager.ts` — AI session lifecycle, tool execution, streaming
 - `src/lib/chatContextCarryOver.ts` — builds a condensed recap of a chat's messages for new-chat context carry-over
 - `src/lib/zipExport.ts` — `downloadFolderAsZip()`: zips the contents of a VFS folder (at the ZIP root) and triggers a browser download; used for project export and dist download

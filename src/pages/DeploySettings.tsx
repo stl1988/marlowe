@@ -7,13 +7,16 @@ import { useDeploySettings } from '@/hooks/useDeploySettings';
 import { useNetlifyOAuth } from '@/hooks/useNetlifyOAuth';
 import { useVercelOAuth } from '@/hooks/useVercelOAuth';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import type { DeployProvider } from '@/contexts/DeploySettingsContext';
+import type { DeployProvider, NpanelProvider } from '@/contexts/DeploySettingsContext';
 import type { PresetDeployProvider } from '@/lib/deploy/types';
-import { PRESET_DEPLOY_PROVIDERS, DEFAULT_NSITE_PROVIDER } from '@/lib/deployProviderPresets';
+import { PRESET_DEPLOY_PROVIDERS, DEFAULT_NPANEL_PROVIDER, DEFAULT_NSITE_PROVIDER } from '@/lib/deployProviderPresets';
 import { ExternalFavicon } from '@/components/ExternalFavicon';
 import { ProviderConfigDialog } from '@/components/ProviderConfigDialog';
 import { AddDeployProviderDialog } from '@/components/AddDeployProviderDialog';
 import { AddCustomProviderDialog } from '@/components/AddCustomProviderDialog';
+import { NpanelMigrationDialog } from '@/components/deploy/NpanelMigrationDialog';
+import { useNpanelClaimCount } from '@/hooks/useNpanelClaims';
+import { Button } from '@/components/ui/button';
 import {
   DndContext,
   closestCenter,
@@ -150,6 +153,7 @@ export function DeploySettings() {
   const [selectedPreset, setSelectedPreset] = useState<PresetDeployProvider | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [customProviderDialogOpen, setCustomProviderDialogOpen] = useState(false);
+  const [migratingProvider, setMigratingProvider] = useState<NpanelProvider | null>(null);
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -182,25 +186,20 @@ export function DeploySettings() {
   };
 
   const handleAddPresetProvider = (preset: PresetDeployProvider, apiKey: string, accountId?: string, organizationId?: string) => {
-    // For Shakespeare, just check if user is logged in
+    // Nostr-authenticated providers need a login rather than a key
     if (preset.requiresNostr && !user) {
       return;
     }
 
-    // For non-Shakespeare/non-nsite providers, require API key
+    // Everything else is reached with an API key, except plain nsite
     if (!preset.requiresNostr && preset.type !== 'nsite' && !apiKey?.trim()) {
       return;
     }
 
     let newProvider: DeployProvider;
 
-    if (preset.type === 'shakespeare') {
-      newProvider = {
-        id: preset.id, // Use preset ID for presets
-        name: preset.name,
-        type: 'shakespeare',
-        ...(preset.proxy && { proxy: true }),
-      };
+    if (preset.type === 'npanel') {
+      newProvider = { ...DEFAULT_NPANEL_PROVIDER, id: preset.id, name: preset.name };
     } else if (preset.type === 'nsite') {
       newProvider = { ...DEFAULT_NSITE_PROVIDER };
     } else if (preset.type === 'netlify') {
@@ -346,6 +345,24 @@ export function DeploySettings() {
             </div>
           )}
 
+          {user && settings.providers.map((provider) => (
+            provider.type === 'npanel' ? (
+              <HeldSites
+                key={`migrate-${provider.id}`}
+                provider={provider}
+                onOpen={() => setMigratingProvider(provider)}
+              />
+            ) : null
+          ))}
+
+          {migratingProvider && (
+            <NpanelMigrationDialog
+              open
+              onOpenChange={(open) => !open && setMigratingProvider(null)}
+              provider={migratingProvider}
+            />
+          )}
+
           {/* Provider Config Dialog */}
           {selectedProviderIndex !== null && settings.providers[selectedProviderIndex] && (
             <ProviderConfigDialog
@@ -407,6 +424,47 @@ export function DeploySettings() {
         </>
       )}
     </SettingsPageLayout>
+  );
+}
+
+/**
+ * Sites held for their previous owner on a gateway that took over a domain.
+ *
+ * The count is asked for on load, rather than the card standing there saying
+ * "you may have sites waiting" to everyone forever. Almost nobody does, and a
+ * card that cannot tell them apart is one most people learn to ignore before
+ * it ever applies to them — while the person it does apply to has a few names
+ * being served from an archive under a key that is not theirs, which is worth
+ * one signature to say out loud.
+ *
+ * It is only the count: {@link useNpanelClaimCount} is two counted rows, not
+ * the deploy-by-deploy read the dialog does when somebody opens it.
+ */
+function HeldSites({ provider, onOpen }: { provider: NpanelProvider; onOpen: () => void }) {
+  const { data } = useNpanelClaimCount(provider);
+
+  // Nothing to say until the gateway says there is something, so a gateway with
+  // no migration behind it — every gateway but the one — shows nothing at all.
+  if (!data?.waiting) return null;
+
+  return (
+    <div className="rounded-lg border border-dashed p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="space-y-1">
+        <h4 className="text-sm font-medium">
+          {data.waiting === 1
+            ? `One name is waiting for you on ${provider.domain}`
+            : `${data.waiting} names are waiting for you on ${provider.domain}`}
+        </h4>
+        <p className="text-sm text-muted-foreground">
+          You published {data.waiting === 1 ? 'it' : 'them'} before {provider.domain} moved to{' '}
+          {provider.name}. {data.waiting === 1 ? 'It is' : 'They are'} being served from an archive
+          until you take {data.waiting === 1 ? 'it' : 'them'} back.
+        </p>
+      </div>
+      <Button variant="outline" onClick={onOpen}>
+        Take back sites
+      </Button>
+    </div>
   );
 }
 
