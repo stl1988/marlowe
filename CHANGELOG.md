@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.12.1] - 2026-09-14
+
+### Fixed
+- **NIP-34 repository lists on the import page came back empty** (own repos and follows): `useUserRepositories`/`useFollowedRepositories` used `pool.query()`, which cancels every relay one second after the *fastest* one answers (Nostrify's default `eoseTimeout`). A repo query is routed to the general read relays plus the git relays — the fast general relays answer first (usually with nothing), and the git relays that actually hold the kind 30617 announcements were cut off before they could reply, so the list silently rendered as "No repositories found". Both hooks now stream through `nostr.req()` via a new `src/lib/streamEvents.ts` helper that waits for all routed relays (8s cap, partial results on timeout), and the own-repos query additionally covers the user's NIP-65 write relays, where announcements live that never touched the default or git relays.
+
 ## [10.12.0] - 2026-09-14
 
 ### Changed

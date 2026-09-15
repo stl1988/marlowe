@@ -1,6 +1,7 @@
 import { useNostr } from '@nostrify/react';
 import { useQuery } from '@tanstack/react-query';
 import type { NostrEvent } from '@nostrify/nostrify';
+import { streamEvents } from '@/lib/streamEvents';
 import type { Repository } from './useUserRepositories';
 
 // Kind 30617 for repository announcements (NIP-34)
@@ -19,12 +20,18 @@ export function useFollowedRepositories(followedPubkeys: string[] = []) {
         return [];
       }
 
-      // Get all repository announcements from followed users
-      const events = await nostr.query([{
-        kinds: [REPOSITORY_KIND],
-        authors: followedPubkeys,
-        limit: 500, // Increased limit to get more repos from follows
-      }], { signal: AbortSignal.timeout(5000) });
+      // Get all repository announcements from followed users. Streamed rather
+      // than pool.query(): that cancels every relay a second after the fastest
+      // one answers, which is long before a git relay has connected and replied.
+      const events = await streamEvents(
+        nostr,
+        [{
+          kinds: [REPOSITORY_KIND],
+          authors: followedPubkeys,
+          limit: 500, // Increased limit to get more repos from follows
+        }],
+        { timeoutMs: 8000 },
+      );
 
       // Process repository events
       const repositories: Repository[] = [];
