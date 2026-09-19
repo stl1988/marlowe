@@ -9,8 +9,7 @@
   "servers": [
     "https://blossom.ditto.pub",
     "https://blossom.dreamith.to",
-    "https://blossom.primal.net",
-    "https://cdn.sovbit.host"
+    "https://blossom.primal.net"
   ],
   "id": "marlowe",
   "title": "marlowe",

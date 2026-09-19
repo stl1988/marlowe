@@ -1,5 +1,11 @@
 # Changelog
 
+## [10.13.0] - 2026-09-20
+
+### Added
+- **Watch files being written live**: while the AI streams a `write`/`edit` tool call, its chat entry now shows the file's content growing in real time — an auto-scrolling, terminal-style code block with a blinking cursor and a live line counter (edits render as a red/green diff). Previously the raw JSON arguments only parsed once fully received, so a large write sat on a motionless "Writing file" spinner for seconds and looked frozen. A new lenient partial-JSON parser (`src/lib/partialJson.ts`) extracts fields from the still-incomplete argument stream, so the file path and content appear as early as they arrive.
+- **Code view follows AI changes**: the file tree refreshes automatically (debounced, preserving open folders) when the AI writes or edits files, and a file open in the editor reloads from disk after an AI write — unless it has unsaved edits, which always win.
+
 ## [10.12.1] - 2026-09-14
 
 ### Fixed

@@ -17,9 +17,11 @@ interface FileEditorProps {
   onSave: (content: string) => void;
   isLoading: boolean;
   projectId?: string;
+  /** Called whenever the dirty state (unsaved edits) changes */
+  onHasChangesChange?: (hasChanges: boolean) => void;
 }
 
-export function FileEditor({ filePath, projectPath, content, onSave, isLoading, projectId }: FileEditorProps) {
+export function FileEditor({ filePath, projectPath, content, onSave, isLoading, projectId, onHasChangesChange }: FileEditorProps) {
   const { t } = useTranslation();
   const [editedContent, setEditedContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,8 +34,10 @@ export function FileEditor({ filePath, projectPath, content, onSave, isLoading, 
   }, [content, filePath]);
 
   useEffect(() => {
-    setHasChanges(editedContent !== content);
-  }, [editedContent, content]);
+    const dirty = editedContent !== content;
+    setHasChanges(dirty);
+    onHasChangesChange?.(dirty);
+  }, [editedContent, content, onHasChangesChange]);
 
   const handleSave = async () => {
     setIsSaving(true);

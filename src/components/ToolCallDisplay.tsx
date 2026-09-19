@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Wrench,
   Eye,
@@ -79,6 +79,75 @@ function ImageGenerationError() {
         onOpenChange={setShowImageModelDialog}
       />
     </>
+  );
+}
+
+interface StreamingBlock {
+  text: string;
+  variant: 'plain' | 'add' | 'remove';
+}
+
+/**
+ * Live-updating preview shown while write/edit arguments are still streaming
+ * in from the AI provider. Auto-scrolls to the bottom as content grows, so
+ * the user can watch the file being written instead of staring at a spinner.
+ */
+function StreamingFilePreview({ blocks, footer }: { blocks: StreamingBlock[]; footer: string }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const totalText = blocks.map((b) => b.text).join('');
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [totalText]);
+
+  const cursor = (
+    <span className="inline-block w-[7px] h-[13px] ml-0.5 align-text-bottom bg-primary/70 animate-pulse" />
+  );
+
+  return (
+    <div className="mt-1 rounded border bg-muted/30 text-xs font-mono overflow-hidden">
+      <div ref={scrollRef} className="max-h-60 overflow-y-auto px-3 py-2">
+        {blocks.map((block, blockIndex) => {
+          const isLastBlock = blockIndex === blocks.length - 1;
+
+          if (block.variant === 'plain') {
+            return (
+              <div key={blockIndex} className="whitespace-pre-wrap break-words text-foreground">
+                {block.text}
+                {isLastBlock && cursor}
+              </div>
+            );
+          }
+
+          const isAdd = block.variant === 'add';
+          const lines = block.text.split('\n');
+          return (
+            <div key={blockIndex}>
+              {lines.map((line, lineIndex) => (
+                <div key={lineIndex} className="flex">
+                  <span className={cn("select-none mr-2", isAdd ? "text-green-500" : "text-red-500")}>
+                    {isAdd ? '+' : '-'}
+                  </span>
+                  <span className={cn(
+                    "flex-1 whitespace-pre-wrap break-words",
+                    isAdd
+                      ? "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300"
+                      : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300"
+                  )}>
+                    {line}
+                    {isLastBlock && lineIndex === lines.length - 1 && cursor}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      <div className="px-3 py-1 border-t bg-muted/20 text-[10px] text-muted-foreground">
+        {footer}
+      </div>
+    </div>
   );
 }
 
@@ -488,6 +557,52 @@ export function ToolCallDisplay({ toolName, toolArgs, state, result, projectId }
   // Only allow clicking when completed
   const isClickable = state === 'completed';
 
+  // Live preview of file writes/edits while the tool-call arguments are still
+  // streaming in (or the tool is executing). Without this, a large write looks
+  // frozen because the raw JSON arguments only parse once fully received.
+  const renderStreamingContent = () => {
+    if (state === 'completed') return null;
+
+    // Write tool (new and legacy)
+    if (toolName === 'write' || toolName === 'text_editor_write') {
+      const content = toolName === 'write' ? toolArgs.content : toolArgs.file_text;
+      if (typeof content !== 'string' || content.length === 0) return null;
+      const lineCount = content.split('\n').length;
+      return (
+        <StreamingFilePreview
+          blocks={[{ text: content, variant: 'plain' }]}
+          footer={`${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}
+        />
+      );
+    }
+
+    // Edit tool (new and legacy)
+    if (toolName === 'edit' || toolName === 'text_editor_str_replace') {
+      const oldStr = toolName === 'edit' ? toolArgs.oldString : toolArgs.old_str;
+      const newStr = toolName === 'edit' ? toolArgs.newString : toolArgs.new_str;
+      const blocks: StreamingBlock[] = [];
+      const footerParts: string[] = [];
+      if (typeof oldStr === 'string' && oldStr.length > 0) {
+        blocks.push({ text: oldStr, variant: 'remove' });
+        footerParts.push(`-${oldStr.split('\n').length}`);
+      }
+      if (typeof newStr === 'string' && newStr.length > 0) {
+        blocks.push({ text: newStr, variant: 'add' });
+        footerParts.push(`+${newStr.split('\n').length}`);
+      }
+      if (blocks.length === 0) return null;
+      const totalLines = blocks.reduce((n, b) => n + b.text.split('\n').length, 0);
+      return (
+        <StreamingFilePreview
+          blocks={blocks}
+          footer={`${footerParts.join(' ')} ${totalLines === 1 ? 'line' : 'lines'}`}
+        />
+      );
+    }
+
+    return null;
+  };
+
   // Render special content for specific tools when expanded
   const renderExpandedContent = () => {
     if (!result || !isExpanded) return null;
@@ -755,6 +870,7 @@ export function ToolCallDisplay({ toolName, toolArgs, state, result, projectId }
           </span>
         </button>
 
+        {renderStreamingContent()}
         {renderExpandedContent()}
         {renderImageBelowTool()}
       </div>

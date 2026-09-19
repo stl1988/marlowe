@@ -1,6 +1,6 @@
 # Marlowe
 
-> Marlowe v10.12.1 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
+> Marlowe v10.13.0 is an open-source, browser-based AI-powered app builder — a fork of [Shakespeare](https://shakespeare.diy) — with a Nostr-native focus. Users describe what they want to build in natural language and an AI assistant writes, modifies, and deploys the code entirely within the browser.
 
 Marlowe runs 100% client-side. There is no server storing your projects or credentials. All project files live in the browser's IndexedDB via LightningFS, AI provider keys are stored in localStorage, and Git operations run through isomorphic-git. The only backend services involved are the AI providers the user configures (OpenAI, Anthropic, Shakespeare AI, etc.) and optional deployment targets (Shakespeare npanel gateway, nsite, Netlify, Vercel, Cloudflare, Railway).
 
@@ -26,6 +26,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - **New Chat context carry-over**: starting a new chat (title menu, `/new` slash command, or the context-window warning banner) prompts the user to either carry over a condensed recap of the previous conversation into the fresh session, or start with a clean slate.
 - **Multilingual UI**: the interface is fully translated into 12 languages — English, German, Spanish, French, Italian, Dutch, Polish, Portuguese, Chinese, Hausa, Yoruba, and Igbo — selectable in Settings → Preferences, with automatic detection from the browser's language preferences (including regional variants like `de-AT` → German) when set to "System".
 - **Dist download**: a project's build output (`dist/` folder) can be downloaded as a ZIP on its own — via the Download button next to Build in the preview toolbar, or via "Download Build (dist)" in the Project Details dialog. The ZIP holds the *contents* of `dist/` at its root, ready to upload to any static host.
+- **Live file-writing preview**: while the AI streams a `write`/`edit` tool call, the chat shows the file's content growing in real time — an auto-scrolling code block with a blinking cursor and a live line counter (edits render as a red/green diff) — instead of a motionless spinner. A lenient partial-JSON parser (`src/lib/partialJson.ts`) extracts fields from the still-incomplete argument string, so the file path and content appear as early as they arrive. The code view follows along: the file tree refreshes automatically (debounced, preserving open folders), and a file open in the editor reloads from disk after an AI write — unless it has unsaved edits, which always win.
 
 ## Architecture
 
@@ -44,6 +45,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - `src/lib/SessionManager.ts` — AI session lifecycle, tool execution, streaming
 - `src/lib/chatContextCarryOver.ts` — builds a condensed recap of a chat's messages for new-chat context carry-over
 - `src/lib/zipExport.ts` — `downloadFolderAsZip()`: zips the contents of a VFS folder (at the ZIP root) and triggers a browser download; used for project export and dist download
+- `src/lib/partialJson.ts` — `parsePartialJsonObject()`: lenient parser that extracts fields from still-streaming (truncated) tool-call argument JSON, including unterminated strings; powers the live file-writing preview in `ToolCallDisplay`
 - `src/components/NewChatDialog.tsx` — confirmation dialog for starting a new chat, with "Start Fresh" / "Carry Over Context" choices
 - `src/components/Shakespeare/` — Core UI: ChatPane, PreviewPane, FileEditor, FileTree
 - `src/components/StatusBars.tsx` — Storage + context window progress bars

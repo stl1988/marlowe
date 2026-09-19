@@ -78,6 +78,7 @@ import { AIMessage } from '@/lib/SessionManager';
 import { getAllSkills } from '@/lib/skills';
 import { NewChatDialog } from '@/components/NewChatDialog';
 import { buildContextCarryOverNote } from '@/lib/chatContextCarryOver';
+import { parsePartialJsonObject } from '@/lib/partialJson';
 
 // Clean interfaces now handled by proper hooks
 
@@ -805,13 +806,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
             <ToolCallDisplay
               key="tool-calls-loading"
               toolName={streamingToolCall.function.name}
-              toolArgs={(() => {
-                try {
-                  return JSON.parse(streamingToolCall.function.arguments);
-                } catch {
-                  return {};
-                }
-              })()}
+              toolArgs={parsePartialJsonObject(streamingToolCall.function.arguments)}
               state="calling"
               projectId={projectId}
             />
@@ -842,13 +837,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         <ToolCallDisplay
           key="tool-running-loading"
           toolName={lastToolCall.function.name}
-          toolArgs={(() => {
-            try {
-              return JSON.parse(lastToolCall.function.arguments);
-            } catch {
-              return {};
-            }
-          })()}
+          toolArgs={parsePartialJsonObject(lastToolCall.function.arguments)}
           state="waiting"
           projectId={projectId}
         />

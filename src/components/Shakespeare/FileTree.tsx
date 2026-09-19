@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useProjectsManager } from '@/hooks/useProjectsManager';
 import { useFS } from '@/hooks/useFS';
 import { useGitStatus } from '@/hooks/useGitStatus';
+import { useSessionSubscription } from '@/hooks/useSessionSubscription';
 import { ChevronRight, ChevronDown, File, Folder, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createGitignoreFilter, normalizePathForGitignore } from '@/lib/gitignore';
@@ -123,27 +124,68 @@ export function FileTree({ projectId, onFileSelect, selectedFile }: FileTreeProp
     });
   }, [projectsManager, fs]);
 
-  const loadFileTree = useCallback(async () => {
-    setIsLoading(true);
+  // Mirror of the tree for use inside callbacks (avoids stale closures)
+  const treeRef = useRef<FileNode[]>([]);
+  useEffect(() => {
+    treeRef.current = tree;
+  }, [tree]);
+
+  const loadFileTree = useCallback(async (preserveOpen = false) => {
+    // Background refreshes must not flash the loading skeleton
+    if (!preserveOpen) setIsLoading(true);
     try {
       // Load gitignore filter
       const projectPath = `${projectsManager['dir']}/${projectId}`;
       const filter = await createGitignoreFilter(fs, projectPath);
       setGitignoreFilter(filter);
 
-      const structure = await buildFileTree(projectId, '');
+      let structure = await buildFileTree(projectId, '');
+
+      // Reapply which directories were open before the reload
+      if (preserveOpen) {
+        const openDirs = new Set<string>();
+        const collect = (nodes: FileNode[]) => {
+          for (const node of nodes) {
+            if (node.type === 'directory' && node.isOpen) openDirs.add(node.path);
+            if (node.children) collect(node.children);
+          }
+        };
+        collect(treeRef.current);
+
+        const apply = (nodes: FileNode[]): FileNode[] =>
+          nodes.map((node) =>
+            node.type === 'directory'
+              ? { ...node, isOpen: openDirs.has(node.path), children: node.children ? apply(node.children) : node.children }
+              : node
+          );
+        structure = apply(structure);
+      }
+
       setTree(structure);
       setFilteredTree(structure);
     } catch (_error) {
       console.error('Failed to load file tree:', _error);
     } finally {
-      setIsLoading(false);
+      if (!preserveOpen) setIsLoading(false);
     }
   }, [projectId, buildFileTree, fs, projectsManager]);
 
   useEffect(() => {
     loadFileTree();
   }, [loadFileTree]);
+
+  // Refresh the tree (debounced) when the AI writes or edits files, so new
+  // files show up without a manual reload. Open directories stay open.
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useSessionSubscription('fileChanged', (changedProjectId) => {
+    if (changedProjectId !== projectId) return;
+    clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadFileTree(true);
+    }, 300);
+  }, [projectId, loadFileTree]);
+
+  useEffect(() => () => clearTimeout(reloadTimerRef.current), []);
 
   const toggleDirectory = (path: string) => {
     const toggleNode = (nodes: FileNode[]): FileNode[] => {

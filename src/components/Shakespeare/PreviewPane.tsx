@@ -28,6 +28,7 @@ import { isMediaFile } from '@/lib/fileUtils';
 import { deriveIframeSubdomain } from '@/lib/iframeSubdomain';
 import { downloadFolderAsZip } from '@/lib/zipExport';
 import { useToast } from '@/hooks/useToast';
+import { useSessionSubscription } from '@/hooks/useSessionSubscription';
 import { getPreviewInjectedScript } from '@/lib/previewInjectedScript';
 
 interface PreviewPaneProps {
@@ -526,6 +527,22 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
       loadFileContent(selectedFile);
     }
   }, [selectedFile, loadFileContent]);
+
+  // Tracks whether the open file has unsaved edits (reported by FileEditor).
+  // A ref is used so the fileChanged subscription always reads the latest value.
+  const isEditorDirtyRef = useRef(false);
+  const handleEditorDirtyChange = useCallback((dirty: boolean) => {
+    isEditorDirtyRef.current = dirty;
+  }, []);
+
+  // Reload the open file when the AI writes or edits it via the write/edit
+  // tools, so the code view follows along instead of showing stale content.
+  // Unsaved user edits always win — the reload is skipped while dirty.
+  useSessionSubscription('fileChanged', (changedProjectId, filePath) => {
+    if (changedProjectId !== projectId || !selectedFile || isEditorDirtyRef.current) return;
+    if (filePath !== `${projectsPath}/${projectId}/${selectedFile}`) return;
+    loadFileContent(selectedFile);
+  }, [projectId, selectedFile, loadFileContent, projectsPath]);
 
   // Reset selected file and navigation history when projectId changes
   const prevProjectIdRef = useRef<string>();
@@ -1058,6 +1075,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                         onSave={handleFileSave}
                         isLoading={isLoading}
                         projectId={projectId}
+                        onHasChangesChange={handleEditorDirtyChange}
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center">
@@ -1156,6 +1174,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                           onSave={handleFileSave}
                           isLoading={isLoading}
                           projectId={projectId}
+                          onHasChangesChange={handleEditorDirtyChange}
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center">
