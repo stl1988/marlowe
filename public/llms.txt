@@ -61,6 +61,7 @@ Marlowe is a hard fork of Shakespeare (https://shakespeare.diy / https://github.
 - `public/marlowe-badge.svg` — "Edit with Marlowe" badge (teal, ✒️)
 - `public/badge.svg` — "Edit with Shakespeare" badge (purple, 🎭)
 - `public/llms.txt` — This file
+- `README.md` — Marlowe project README (features, how it works, mirrors) with both "Edit with Shakespeare" and "Edit with Marlowe" clone badges
 
 ## Nostr Integration
 

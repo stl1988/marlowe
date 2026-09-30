@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.14.1] - 2026-09-30
+
+### Fixed
+- **README.md was still the unmodified Shakespeare file**: rewritten for Marlowe — Marlowe title, both "Edit with" badges (Shakespeare + Marlowe clone links for this repo), Marlowe URLs and mirrors (marlowe.shakespeare.wtf and the nsite), and the current feature list (PayPerQ credits management, Economy Mode enforcement, live file-writing preview, syntax highlighting, 12 UI languages, Nostr Settings Sync, npanel/nsite deployment).
+
 ## [10.14.0] - 2026-09-30
 
 ### Added
