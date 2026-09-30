@@ -19,6 +19,7 @@ import { AISettingsProvider } from '@/components/AISettingsProvider';
 import { GitSettingsProvider } from '@/components/GitSettingsProvider';
 import { DeploySettingsProvider } from '@/components/DeploySettingsProvider';
 import { SessionManagerProvider } from '@/components/SessionManagerProvider';
+import { NWCProvider } from '@/contexts/NWCContext';
 import { FSProvider } from '@/components/FSProvider';
 import { ConsoleErrorProvider } from '@/components/ConsoleErrorProvider';
 import { GitSyncProvider } from '@/components/GitSyncProvider';
@@ -149,15 +150,17 @@ export function App() {
                             <DeploySettingsProvider>
                               <GitSyncProvider>
                                 <SessionManagerProvider>
-                                  <TooltipProvider>
-                                    <DynamicFavicon />
-                                    <OfflineIndicator />
-                                    <PWAUpdatePrompt />
-                                    <LockdownModeDetector />
-                                    <Suspense>
-                                      <AppRouter />
-                                    </Suspense>
-                                  </TooltipProvider>
+                                  <NWCProvider>
+                                    <TooltipProvider>
+                                      <DynamicFavicon />
+                                      <OfflineIndicator />
+                                      <PWAUpdatePrompt />
+                                      <LockdownModeDetector />
+                                      <Suspense>
+                                        <AppRouter />
+                                      </Suspense>
+                                    </TooltipProvider>
+                                  </NWCProvider>
                                 </SessionManagerProvider>
                               </GitSyncProvider>
                             </DeploySettingsProvider>

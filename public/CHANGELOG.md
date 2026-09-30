@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.14.3] - 2026-09-30
+
+### Fixed
+- **Crash when opening a PayPerQ provider's settings** ("useNWC must be used within a NWCProvider"): `PPQCreditsContent` uses `useWallet`/`useNWC` for in-app Lightning payments, but the `NWCProvider` was never mounted anywhere in the app tree. It is now mounted globally in `App.tsx` (inside `SessionManagerProvider`), which also makes NWC wallet payments available app-wide instead of only working in project templates that mount the provider themselves.
+
 ## [10.14.2] - 2026-09-30
 
 ### Added
