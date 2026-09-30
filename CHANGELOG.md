@@ -1,5 +1,17 @@
 # Changelog
 
+## [10.14.0] - 2026-09-30
+
+### Added
+- **PayPerQ credits management**: using PayPerQ as the AI provider now shows the remaining credit balance everywhere Shakespeare AI credits appear — a wallet badge next to the session cost in the chat input, refreshed automatically after every AI request (instantly and once more after 5 s, because PPQ bills post-hoc), plus the existing badges in Settings → AI and onboarding. The provider config dialog gains a PayPerQ top-up tab (`PPQCreditsContent`, `src/lib/ppq.ts`): create Lightning (5 % bonus), on-chain BTC, Litecoin, Liquid or Monero invoices via `POST /topup/create/{method}`, pay in-app with NWC/WebLN or QR/copy/checkout link, with live status polling (`/topup/status/{id}`, balance-watch fallback when no invoice id is returned) until the credit lands. `useProviderModels` now parses PPQ's `input_per_1M_tokens`/`output_per_1M_tokens` pricing so per-request costs are computed even when the stream carries no `usage.cost`, and Quilly treats HTTP 402 like "insufficient quota" with an Add-credits shortcut for PPQ.
+- **Syntax highlighting in the code view** (and in chat code blocks): Prism-based highlighting for ~20 web languages (JS/TS/JSX/TSX, HTML/XML/SVG, CSS, JSON/JSON5, Markdown, YAML, TOML, Bash, Python, C/C++, Java, SQL, regex) via the new `src/lib/syntaxHighlight.ts`. The file editor renders a highlighted layer behind a transparent textarea with synced scrolling (disabled over 200 KB to keep typing snappy), and Tab now inserts two spaces instead of moving focus. Custom light/dark token palettes (`.code-highlight` / `.code-highlight-dark` in `index.css`) replace the stock prism theme import.
+- **Economy Mode is now enforced technically, not just by prompt**: in economy mode, tool outputs older than the last 24 messages are elided to a short head plus placeholder (file contents are the biggest re-sent token hog in agent sessions), and the step budget per task is capped at 25 instead of 50. The system prompt tells the AI that elision happens so it re-reads files on demand instead of complaining about missing context.
+
+### Fixed
+- **Reasoning content was re-sent to providers on every turn**: `reasoning_content` (thinking traces) stayed in the outgoing message history and was re-billed as input tokens on every request — a major hidden cost driver on thinking models. It is now stripped at send time while remaining in the UI and session history for display.
+- **"Start fresh" chat was resurrected on reload**: `startNewSession` without a carry-over note never persisted the cleared session, so `readLastSessionHistory` loaded the old history file again on reload until the first message of the new chat was sent. The empty new session is now written immediately.
+- **Chat input bar overflowed on mobile**: the bottom control row (attach, context wheel, cost, credit balance, Eco, thinking, model selector, send) now wraps; the model selector gets its own full-width row on small screens, attachment chips wrap as direct flex items, and the thinking-level label hides below `sm`.
+
 ## [10.13.0] - 2026-09-20
 
 ### Added

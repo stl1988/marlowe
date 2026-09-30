@@ -6,6 +6,7 @@ import { QuillySVG } from '@/components/ui/QuillySVG';
 import { useAISettings } from '@/hooks/useAISettings';
 import { parseProviderModel } from '@/lib/parseProviderModel';
 import { useAICredits } from '@/hooks/useAICredits';
+import { isPPQProvider } from '@/lib/ppq';
 import { AIProviderConfigDialog } from './AIProviderConfigDialog';
 import { ProjectPreviewConsoleError } from '@/lib/consoleMessages';
 import { useState } from 'react';
@@ -112,9 +113,11 @@ function QuillyContent({ error, onDismiss, onNewChat, onOpenModelSelector, onTry
             }],
           };
 
+        case error.status === 402:
         case error.code === 'insufficient_quota': {
-          // Only show credits dialog if we have a provider with nostr enabled
-          if (provider?.nostr) {
+          // Show credits dialog for providers with a manageable credit balance
+          // (Nostr-authenticated providers like Shakespeare AI, or PayPerQ)
+          if (provider?.nostr || (provider && isPPQProvider(provider))) {
             return {
               message: 'Your account is low on credits. Please add credits to keep creating.',
               showCreditsButton: true,

@@ -502,5 +502,18 @@
   "failedToDuplicateProject": "Ọ dara ada imepụta ọrụ",
   "newProjectName": "Aha Ọrụ Ọhụrụ",
   "duplicateProjectDescription": "Mepụta oyiri nke ọrụ a na aha ọhụrụ",
-  "resume": "Gaa n'ihu"
+  "resume": "Gaa n'ihu",
+  "creditsRemaining": "Kredit fọdụrụ",
+  "ppqApiKeyRequired": "Tinye igodo API PayPerQ gị na tebụl „Dezie“ iji hụ nguzogide gị ma tinye kredit.",
+  "paymentReceived": "Ịkwụ ụgwọ eruola",
+  "paymentFailed": "Ịkwụ ụgwọ dara oda",
+  "topupFailed": "Ịkwụ ụgwọ ahụ emebiela ma ọ bụ dara oda.",
+  "refreshBalance": "Mee nguzogide ọhụrụ",
+  "payWithWallet": "Kwụọ site na obere akpa",
+  "sendToAddress": "Zipu ụgwọ na adreesị a",
+  "openCheckout": "Mepee peeji ịkwụ ụgwọ",
+  "waitingForPayment": "Na-echere ịkwụ ụgwọ…",
+  "topupLimits": "Kacha nta {{min}} · Kacha ukwu {{max}}",
+  "lightningBonus": "+5% ngwa maka ịkwụ ụgwọ Lightning",
+  "ppqCardHint": "Ịkwụ ụgwọ kaadị na njikwa akaụntụ dị na"
 }

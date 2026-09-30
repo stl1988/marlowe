@@ -510,5 +510,18 @@
   "failedToDuplicateProject": "复制项目失败",
   "newProjectName": "新项目名称",
   "duplicateProjectDescription": "使用新名称创建此项目的副本",
-  "resume": "继续"
+  "resume": "继续",
+  "creditsRemaining": "剩余额度",
+  "ppqApiKeyRequired": "在“编辑”选项卡中添加您的 PayPerQ API 密钥，以查看余额并充值。",
+  "paymentReceived": "已收到付款",
+  "paymentFailed": "付款失败",
+  "topupFailed": "账单已过期或付款失败。",
+  "refreshBalance": "刷新余额",
+  "payWithWallet": "用钱包支付",
+  "sendToAddress": "将付款发送到此地址",
+  "openCheckout": "打开结账页面",
+  "waitingForPayment": "等待付款…",
+  "topupLimits": "最低 {{min}} · 最高 {{max}}",
+  "lightningBonus": "闪电网络支付 +5% 奖励",
+  "ppqCardHint": "银行卡支付和账户管理请访问"
 }

@@ -97,9 +97,21 @@ export function useProviderModels(): ModelFetchResult {
                 !isNaN(Number(model.pricing.prompt)) &&
                 !isNaN(Number(model.pricing.completion))
               ) {
+                // OpenRouter-style pricing: per-token prices as strings
                 providerModel.pricing = {
                   prompt: new Decimal(model.pricing.prompt),
                   completion: new Decimal(model.pricing.completion),
+                };
+              } else if (
+                "pricing" in model && model.pricing && typeof model.pricing === "object" &&
+                "input_per_1M_tokens" in model.pricing && "output_per_1M_tokens" in model.pricing &&
+                typeof model.pricing.input_per_1M_tokens === "number" &&
+                typeof model.pricing.output_per_1M_tokens === "number"
+              ) {
+                // PayPerQ-style pricing: USD per 1M tokens as numbers
+                providerModel.pricing = {
+                  prompt: new Decimal(model.pricing.input_per_1M_tokens).div(1_000_000),
+                  completion: new Decimal(model.pricing.output_per_1M_tokens).div(1_000_000),
                 };
               }
 

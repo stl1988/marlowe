@@ -597,5 +597,18 @@
   "failedToDuplicateProject": "Project dupliceren mislukt",
   "newProjectName": "Nieuwe projectnaam",
   "duplicateProjectDescription": "Maak een kopie van dit project met een nieuwe naam",
-  "resume": "Hervatten"
+  "resume": "Hervatten",
+  "creditsRemaining": "Resterend tegoed",
+  "ppqApiKeyRequired": "Voeg je PayPerQ API-sleutel toe op het tabblad „Bewerken” om je saldo te zien en credits op te waarderen.",
+  "paymentReceived": "Betaling ontvangen",
+  "paymentFailed": "Betaling mislukt",
+  "topupFailed": "De factuur is verlopen of de betaling is mislukt.",
+  "refreshBalance": "Saldo vernieuwen",
+  "payWithWallet": "Betaal met wallet",
+  "sendToAddress": "Stuur de betaling naar dit adres",
+  "openCheckout": "Betaalpagina openen",
+  "waitingForPayment": "Wachten op betaling…",
+  "topupLimits": "Min. {{min}} · Max. {{max}}",
+  "lightningBonus": "+5% bonus bij Lightning-betalingen",
+  "ppqCardHint": "Kaartbetalingen en accountbeheer zijn beschikbaar op"
 }

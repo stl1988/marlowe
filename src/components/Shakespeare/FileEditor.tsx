@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Save, Loader2, FileVideo, Music, FileArchive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGitStatus } from '@/hooks/useGitStatus';
+import { useTheme } from '@/hooks/useTheme';
 import { isMediaFile } from '@/lib/fileUtils';
 import { VFSImage } from '@/components/VFSImage';
+import { highlightFile } from '@/lib/syntaxHighlight';
 
 interface FileEditorProps {
   filePath: string;
@@ -23,10 +24,12 @@ interface FileEditorProps {
 
 export function FileEditor({ filePath, projectPath, content, onSave, isLoading, projectId, onHasChangesChange }: FileEditorProps) {
   const { t } = useTranslation();
+  const { displayTheme } = useTheme();
   const [editedContent, setEditedContent] = useState(content);
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const { data: gitStatus } = useGitStatus(projectId || null);
+  const highlightPreRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     setEditedContent(content);
@@ -38,6 +41,37 @@ export function FileEditor({ filePath, projectPath, content, onSave, isLoading, 
     setHasChanges(dirty);
     onHasChangesChange?.(dirty);
   }, [editedContent, content, onHasChangesChange]);
+
+  // Syntax highlighting. Skipped for very large files to keep typing snappy.
+  // A trailing newline is appended so the highlighted block keeps the same
+  // height as the textarea when the text ends with a newline.
+  const highlightedHtml = useMemo(() => {
+    if (editedContent.length > 200_000) return null;
+    return highlightFile(editedContent + '\n', filePath);
+  }, [editedContent, filePath]);
+
+  // Keep the highlighted layer perfectly aligned with the textarea scroll position
+  const handleEditorScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    const pre = highlightPreRef.current;
+    if (pre) {
+      pre.scrollTop = e.currentTarget.scrollTop;
+      pre.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
+
+  // Insert two spaces on Tab instead of moving focus
+  const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const target = e.currentTarget;
+    const { selectionStart, selectionEnd, value } = target;
+    const next = `${value.slice(0, selectionStart)}  ${value.slice(selectionEnd)}`;
+    setEditedContent(next);
+    requestAnimationFrame(() => {
+      target.selectionStart = selectionStart + 2;
+      target.selectionEnd = selectionStart + 2;
+    });
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -71,10 +105,6 @@ export function FileEditor({ filePath, projectPath, content, onSave, isLoading, 
       yaml: 'yaml',
     };
     return languageMap[extension || ''] || 'text';
-  };
-
-  const getMonospaceFont = () => {
-    return 'font-mono text-sm';
   };
 
   // Helper function to get git status for the current file
@@ -175,18 +205,41 @@ export function FileEditor({ filePath, projectPath, content, onSave, isLoading, 
             <p className="text-xs text-muted-foreground/60">Binary file — preview not available</p>
           </div>
         ) : (
-          <Textarea
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            className={cn(
-              'w-full h-full resize-none border-0 rounded-none',
-              'focus:outline-none focus:ring-0',
-              'touch-action-manipulation overscroll-contain',
-              getMonospaceFont()
+          <div className="relative h-full w-full overflow-hidden">
+            {/* Highlighted code layer (behind the transparent textarea) */}
+            {highlightedHtml !== null && (
+              <pre
+                ref={highlightPreRef}
+                aria-hidden="true"
+                className={cn(
+                  'absolute inset-0 m-0 overflow-hidden px-3 py-2',
+                  'font-mono text-sm leading-normal whitespace-pre-wrap [overflow-wrap:anywhere]',
+                  'pointer-events-none select-none',
+                  displayTheme === 'dark' ? 'code-highlight-dark' : 'code-highlight'
+                )}
+              >
+                <code dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+              </pre>
             )}
-            placeholder={`// Edit ${filePath}...`}
-            spellCheck={false}
-          />
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              onScroll={handleEditorScroll}
+              onKeyDown={handleEditorKeyDown}
+              className={cn(
+                'absolute inset-0 w-full h-full resize-none border-0 rounded-none px-3 py-2',
+                'font-mono text-sm leading-normal whitespace-pre-wrap [overflow-wrap:anywhere]',
+                'focus:outline-none focus:ring-0',
+                'touch-action-manipulation overscroll-contain bg-transparent',
+                highlightedHtml !== null
+                  ? 'text-transparent caret-foreground selection:bg-primary/30 selection:text-transparent'
+                  : 'text-foreground'
+              )}
+              placeholder={`// Edit ${filePath}...`}
+              spellCheck={false}
+              aria-label={`Edit ${filePath}`}
+            />
+          </div>
         )}
       </CardContent>
     </div>

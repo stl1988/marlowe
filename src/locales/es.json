@@ -597,5 +597,18 @@
   "failedToDuplicateProject": "Error al duplicar el proyecto",
   "newProjectName": "Nuevo nombre del proyecto",
   "duplicateProjectDescription": "Crea una copia de este proyecto con un nuevo nombre",
-  "resume": "Reanudar"
+  "resume": "Reanudar",
+  "creditsRemaining": "Saldo de créditos restante",
+  "ppqApiKeyRequired": "Añade tu clave de API de PayPerQ en la pestaña «Editar» para ver tu saldo y recargar créditos.",
+  "paymentReceived": "Pago recibido",
+  "paymentFailed": "Pago fallido",
+  "topupFailed": "La factura expiró o el pago falló.",
+  "refreshBalance": "Actualizar saldo",
+  "payWithWallet": "Pagar con monedero",
+  "sendToAddress": "Enviar el pago a esta dirección",
+  "openCheckout": "Abrir página de pago",
+  "waitingForPayment": "Esperando el pago…",
+  "topupLimits": "Mín. {{min}} · Máx. {{max}}",
+  "lightningBonus": "+5 % de bonificación en pagos Lightning",
+  "ppqCardHint": "Los pagos con tarjeta y la gestión de la cuenta están disponibles en"
 }

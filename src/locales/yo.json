@@ -502,5 +502,18 @@
   "failedToDuplicateProject": "O kuna lati ṣe ẹda iṣẹ akanṣe",
   "newProjectName": "Orukọ Iṣẹ Akanṣe Tuntun",
   "duplicateProjectDescription": "Ṣẹda ẹda ti iṣẹ akanṣe yii pẹlu orukọ tuntun",
-  "resume": "Tẹsiwaju"
+  "resume": "Tẹsiwaju",
+  "creditsRemaining": "Àwọn kírèdìtì tó kù",
+  "ppqApiKeyRequired": "Ṣafikun kókó API PayPerQ rẹ ni taabu „Ṣatunkọ“ lati wo iye owo rẹ ati ṣe afikun kiredit.",
+  "paymentReceived": "Isanwo ti de",
+  "paymentFailed": "Isanwo kùnà",
+  "topupFailed": "Ìrìsì fàáwò parí tàbí ìsanwó kùnà.",
+  "refreshBalance": "Ṣe àtúnṣe iye owo",
+  "payWithWallet": "Sanwó pẹ̀lú àpamọ́wọ́",
+  "sendToAddress": "Fi isanwo ránṣẹ sí àdírẹ́sì yìí",
+  "openCheckout": "Ṣí ojú-ìwé ìsanwó",
+  "waitingForPayment": "Nduro de isanwo…",
+  "topupLimits": "Kéré jù {{min}} · Pọ́n jù {{max}}",
+  "lightningBonus": "Àfikún 5% fún ìsanwó Lightning",
+  "ppqCardHint": "Ìsanwó káàdì àti ìṣàkóso àkáǹtì wà ní"
 }

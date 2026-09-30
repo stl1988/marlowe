@@ -601,5 +601,18 @@
   "failedToDuplicateProject": "Nie udało się zduplikować projektu",
   "newProjectName": "Nowa nazwa projektu",
   "duplicateProjectDescription": "Utwórz kopię tego projektu z nową nazwą",
-  "resume": "Wznów"
+  "resume": "Wznów",
+  "creditsRemaining": "Pozostałe środki",
+  "ppqApiKeyRequired": "Dodaj swój klucz API PayPerQ na karcie „Edytuj”, aby zobaczyć saldo i doładować środki.",
+  "paymentReceived": "Płatność otrzymana",
+  "paymentFailed": "Płatność nieudana",
+  "topupFailed": "Faktura wygasła lub płatność nie powiodła się.",
+  "refreshBalance": "Odśwież saldo",
+  "payWithWallet": "Zapłać portfelem",
+  "sendToAddress": "Wyślij płatność na ten adres",
+  "openCheckout": "Otwórz stronę płatności",
+  "waitingForPayment": "Oczekiwanie na płatność…",
+  "topupLimits": "Min. {{min}} · Maks. {{max}}",
+  "lightningBonus": "+5% bonusu przy płatnościach Lightning",
+  "ppqCardHint": "Płatności kartą i zarządzanie kontem dostępne są na"
 }

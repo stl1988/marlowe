@@ -25,6 +25,64 @@ export type AIMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam | {
   tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[];
 };
 
+/**
+ * Remove `reasoning_content` from assistant messages before sending.
+ *
+ * Reasoning content is kept in the session/UI for display, but providers do
+ * not need it back (DeepSeek explicitly forbids sending it), and re-sending
+ * it would re-bill the entire thinking trace as input tokens on every turn.
+ * This is a send-time transformation only — `session.messages` stays intact.
+ */
+function stripReasoningContent(
+  msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+  return msgs.map((msg) => {
+    if (msg.role !== 'assistant') return msg;
+    if (!('reasoning_content' in msg) || !msg.reasoning_content) return msg;
+    const { reasoning_content: _omitted, ...rest } = msg as Record<string, unknown>;
+    return rest as OpenAI.Chat.Completions.ChatCompletionMessageParam;
+  });
+}
+
+/** Number of trailing messages kept fully intact in economy mode. */
+const ECONOMY_RECENT_WINDOW = 24;
+/** How many leading characters of an elided tool output are kept as context. */
+const ECONOMY_TOOL_HEAD_CHARS = 200;
+/** Tool outputs shorter than this are left alone even outside the window. */
+const ECONOMY_TOOL_MIN_ELIDE = 400;
+
+/** Maximum number of consecutive AI steps per user message in economy mode (normal mode: 50). */
+const ECONOMY_MAX_STEPS = 25;
+
+/**
+ * Economy mode: replace the content of older tool messages (outside the
+ * recent window) with a compact placeholder. Tool outputs (file contents,
+ * command output, search results) are the biggest token hogs in long agent
+ * sessions and are re-sent verbatim on every step. The AI can always re-run
+ * the tool if it needs the data again.
+ *
+ * Send-time transformation only — the session history keeps full outputs.
+ */
+function elideOldToolOutputs(
+  msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+  const cutoff = msgs.length - ECONOMY_RECENT_WINDOW;
+  if (cutoff <= 0) return msgs;
+
+  return msgs.map((msg, idx) => {
+    if (idx >= cutoff) return msg;
+    if (msg.role !== 'tool' || typeof msg.content !== 'string') return msg;
+    if (msg.content.length <= ECONOMY_TOOL_MIN_ELIDE) return msg;
+
+    const head = msg.content.slice(0, ECONOMY_TOOL_HEAD_CHARS);
+    const omitted = msg.content.length - ECONOMY_TOOL_HEAD_CHARS;
+    return {
+      ...msg,
+      content: `${head}\n… [${omitted} characters omitted to save credits (economy mode). Re-run the tool if you need this data again.]`,
+    };
+  });
+}
+
 export interface SessionState {
   projectId: string;
   tools: Record<string, OpenAI.Chat.Completions.ChatCompletionTool>;
@@ -312,6 +370,12 @@ export class SessionManager {
           // Default to false if reading fails
         }
 
+        // Economy mode also caps consecutive tool-call steps, since every
+        // step re-sends the whole (growing) conversation to the provider.
+        if (economyMode && stepCount > ECONOMY_MAX_STEPS) {
+          break;
+        }
+
         const systemPrompt = await makeSystemPrompt({
           cwd,
           fs: this.fs,
@@ -426,6 +490,15 @@ export class SessionManager {
         // If this session has already determined images aren't supported, strip them proactively
         if (session.imagesNotSupported) {
           messages = stripImageUrls(messages);
+        }
+
+        // Never re-send reasoning content — it would be re-billed as input
+        // tokens on every turn and providers don't need it back.
+        messages = stripReasoningContent(messages);
+
+        // Economy mode: elide older tool outputs to keep the re-sent context small
+        if (economyMode) {
+          messages = elideOldToolOutputs(messages);
         }
 
         // Prepare completion options
@@ -801,6 +874,12 @@ export class SessionManager {
 
     if (carryOverNote && carryOverNote.trim()) {
       await this.addMessage(projectId, { role: 'user', content: carryOverNote.trim() });
+    } else {
+      // Persist the cleared session under its new session name. Without this,
+      // a reload before the first message would resurrect the previous chat,
+      // because readLastSessionHistory() picks the most recent history file —
+      // which until now was still the old session's file.
+      await this.saveSessionHistory(projectId);
     }
   }
 

@@ -598,5 +598,18 @@
   "failedToDuplicateProject": "Failed to duplicate project",
   "newProjectName": "New Project Name",
   "duplicateProjectDescription": "Create a copy of this project with a new name",
-  "resume": "Resume"
+  "resume": "Resume",
+  "creditsRemaining": "Remaining credit balance",
+  "ppqApiKeyRequired": "Add your PayPerQ API key in the Edit tab to view your balance and top up credits.",
+  "paymentReceived": "Payment received",
+  "paymentFailed": "Payment failed",
+  "topupFailed": "The invoice expired or the payment failed.",
+  "refreshBalance": "Refresh balance",
+  "payWithWallet": "Pay with wallet",
+  "sendToAddress": "Send payment to this address",
+  "openCheckout": "Open checkout page",
+  "waitingForPayment": "Waiting for payment…",
+  "topupLimits": "Min. {{min}} · Max. {{max}}",
+  "lightningBonus": "+5% bonus on Lightning payments",
+  "ppqCardHint": "Card payments and account management are available at"
 }

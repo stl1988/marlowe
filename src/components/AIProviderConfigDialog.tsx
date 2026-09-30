@@ -30,7 +30,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import type { AIProvider } from '@/contexts/AISettingsContext';
 import { ExternalFavicon } from '@/components/ExternalFavicon';
 import { useToast } from '@/hooks/useToast';
-import { useAICredits } from '@/hooks/useAICredits';
+import { useAICredits, aiCreditsQueryKey } from '@/hooks/useAICredits';
+import { isPPQProvider } from '@/lib/ppq';
+import { PPQCreditsContent } from '@/components/PPQCreditsContent';
 import { createAIClient } from '@/lib/ai-client';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -176,7 +178,7 @@ function LightningPayment({ invoice, amount, paymentId, provider, onClose, onPay
 
           // Update credits balance
           queryClient.invalidateQueries({
-            queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+            queryKey: aiCreditsQueryKey(provider, user?.pubkey),
           });
 
           // Update payments list
@@ -348,7 +350,10 @@ export function AIProviderConfigDialog({
 
   // Check if provider supports credits
   const { data: credits, error: creditsError, isLoading: isLoadingCredits } = useAICredits(provider);
-  const supportsCredits = !creditsError && credits !== undefined;
+  // PayPerQ supports credits management whenever an API key is configured,
+  // even if the balance query hasn't succeeded yet.
+  const isPPQ = isPPQProvider(provider);
+  const supportsCredits = (!creditsError && credits !== undefined) || (isPPQ && !!provider.apiKey);
 
   // Credits state
   const [amount, setAmount] = useState<number>(10);
@@ -421,7 +426,7 @@ export function AIProviderConfigDialog({
         body: request,
       }) as Payment;
     },
-    enabled: open && supportsCredits && debouncedAmount > 0,
+    enabled: open && supportsCredits && !isPPQ && debouncedAmount > 0,
     retry: false,
     refetchOnWindowFocus: false,
     staleTime: Infinity,
@@ -436,7 +441,7 @@ export function AIProviderConfigDialog({
       const data = await ai.get('/credits/payments?status=completed&limit=50') as PaymentsResponse;
       return data.data;
     },
-    enabled: open && supportsCredits,
+    enabled: open && supportsCredits && !isPPQ,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -449,7 +454,7 @@ export function AIProviderConfigDialog({
       const data = await ai.get('/credits/giftcards?limit=50') as GiftcardsResponse;
       return data.data;
     },
-    enabled: open && supportsCredits,
+    enabled: open && supportsCredits && !isPPQ,
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -480,7 +485,7 @@ export function AIProviderConfigDialog({
       });
 
       queryClient.invalidateQueries({
-        queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+        queryKey: aiCreditsQueryKey(provider, user?.pubkey),
       });
     },
     onError: (error: Error) => {
@@ -521,7 +526,7 @@ export function AIProviderConfigDialog({
 
       if (updatedPayment.status === 'completed') {
         queryClient.invalidateQueries({
-          queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+          queryKey: aiCreditsQueryKey(provider, user?.pubkey),
         });
         toast({
           title: t('paymentCompleted'),
@@ -577,7 +582,7 @@ export function AIProviderConfigDialog({
       });
 
       queryClient.invalidateQueries({
-        queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+        queryKey: aiCreditsQueryKey(provider, user?.pubkey),
       });
 
       setGiftcardAmount(10);
@@ -608,7 +613,7 @@ export function AIProviderConfigDialog({
       });
 
       queryClient.invalidateQueries({
-        queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+        queryKey: aiCreditsQueryKey(provider, user?.pubkey),
       });
 
       setRedeemCode('');
@@ -661,7 +666,7 @@ export function AIProviderConfigDialog({
       });
 
       queryClient.invalidateQueries({
-        queryKey: ['ai-credits', provider.nostr ? user?.pubkey ?? '' : '', provider.id],
+        queryKey: aiCreditsQueryKey(provider, user?.pubkey),
       });
 
       queryClient.invalidateQueries({
@@ -1590,7 +1595,11 @@ export function AIProviderConfigDialog({
                   <TabsTrigger value="edit">{t('edit')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="credits" className="flex-1 overflow-y-auto mt-0">
-                  {renderCreditsContent()}
+                  {isPPQProvider(provider) ? (
+                    <PPQCreditsContent provider={provider} />
+                  ) : (
+                    renderCreditsContent()
+                  )}
                 </TabsContent>
                 <TabsContent value="edit" className="flex-1 overflow-y-auto mt-0">
                   {renderEditContent()}

@@ -528,7 +528,9 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
 - **Skip unnecessary builds**: Only trigger \`build_project\` when the user explicitly asks to verify the build, or when a build is strictly required to finish the task.
 - **Commit once at the end**: Do not make intermediate commits. Commit exactly once at the end of your turn.
 - **Short replies**: Keep your prose responses concise. Avoid long explanatory preambles or postambles — answer directly and move on.
-- **No redundant confirmations**: Do not ask "Shall I proceed?" or summarise what you are about to do before doing it. Just do it.`;
+- **No redundant confirmations**: Do not ask "Shall I proceed?" or summarise what you are about to do before doing it. Just do it.
+- **Older tool outputs are elided automatically**: To save tokens, the app removes older tool outputs (file contents, command output) from the conversation history sent to you. If you need data from an omitted output, simply re-run the tool (e.g. read the file again with offset/limit) instead of complaining about missing context.
+- **Step budget**: You have at most 25 tool-call steps for this task. If you are running low, wrap up: commit what works and briefly state what remains.`;
   }
 
   // Append user-controlled additional instructions, if any.

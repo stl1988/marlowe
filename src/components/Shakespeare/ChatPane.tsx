@@ -51,6 +51,7 @@ import { TodoWriteTool } from '@/lib/tools/TodoWriteTool';
 import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
 import { useEconomyMode } from '@/hooks/useEconomyMode';
+import { useAICredits } from '@/hooks/useAICredits';
 import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
 import { ReadBipTool } from '@/lib/tools/ReadBipTool';
 import { ReadBoltTool } from '@/lib/tools/ReadBoltTool';
@@ -529,6 +530,31 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
 
   // Use external loading state if provided, otherwise use internal state
   const isLoading = externalIsLoading !== undefined ? externalIsLoading : internalIsLoading;
+
+  // Resolve the currently selected provider (for credit balance display)
+  const currentProvider = useMemo(() => {
+    if (!providerModel.trim()) return undefined;
+    try {
+      return parseProviderModel(providerModel, settings.providers).provider;
+    } catch {
+      return undefined;
+    }
+  }, [providerModel, settings.providers]);
+
+  // Live credit balance (PayPerQ, Shakespeare AI, …). Refreshed whenever a
+  // generation finishes, and once more after a delay because some providers
+  // (e.g. PayPerQ) bill post-hoc and need a moment to settle.
+  const { data: creditsData, refetch: refetchCredits } = useAICredits(currentProvider);
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    const justFinished = wasLoadingRef.current && !isLoading;
+    wasLoadingRef.current = isLoading;
+    if (!justFinished) return;
+
+    refetchCredits();
+    const timer = setTimeout(() => refetchCredits(), 5000);
+    return () => clearTimeout(timer);
+  }, [isLoading, refetchCredits]);
 
   // Calculate context usage percentage
   const currentModel = useMemo(() => {
@@ -1040,6 +1066,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         currentModelContextLength={currentModel?.contextLength}
         lastInputTokens={lastInputTokens}
         totalCost={totalCost}
+        creditsBalance={creditsData?.amount}
         isDragOver={isDragOver}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}

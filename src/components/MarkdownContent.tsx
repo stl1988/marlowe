@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { highlightCode } from '@/lib/syntaxHighlight';
 
 interface MarkdownContentProps {
   children: string;
@@ -47,8 +48,11 @@ export const MarkdownContent = memo(function MarkdownContent({
                     {lang}
                   </div>
                 )}
-                <pre className="overflow-x-auto p-3 leading-relaxed m-0">
-                  <code className="font-mono">{code}</code>
+                <pre className={`overflow-x-auto p-3 leading-relaxed m-0 ${isDark ? 'code-highlight-dark' : 'code-highlight'}`}>
+                  <code
+                    className="font-mono"
+                    dangerouslySetInnerHTML={{ __html: highlightCode(code, lang || undefined) }}
+                  />
                 </pre>
               </div>
             );

@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf } from 'lucide-react';
+import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf, Wallet } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
 import {
   Popover,
@@ -39,6 +39,8 @@ interface ChatInputProps {
   currentModelContextLength?: number;
   lastInputTokens?: number;
   totalCost: number;
+  /** Remaining credit balance for the current provider (e.g. PayPerQ), if available */
+  creditsBalance?: number;
   isDragOver: boolean;
   onDragEnter: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -80,6 +82,7 @@ export const ChatInput = memo(function ChatInput({
   currentModelContextLength,
   lastInputTokens,
   totalCost,
+  creditsBalance,
   isDragOver,
   onDragEnter,
   onDragOver,
@@ -316,14 +319,15 @@ export const ChatInput = memo(function ChatInput({
         </div>
 
         {/* Bottom Controls Row */}
-        <div className="flex items-center gap-4 px-2 py-2">
-          {/* File Attachment */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-4 px-2 py-2">
+          {/* File Attachment ("contents" lets the chips wrap as direct flex items on small screens) */}
           <FileAttachment
             onFileSelect={handleFileSelect}
             onFileRemove={handleFileRemove}
             selectedFiles={attachedFiles}
             disabled={isLoadingSettings}
             multiple={true}
+            className="contents"
           />
 
           {/* Context Usage Wheel */}
@@ -365,6 +369,23 @@ export const ChatInput = memo(function ChatInput({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{t('totalCostSession')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Remaining credit balance (e.g. PayPerQ) */}
+          {typeof creditsBalance === 'number' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-md whitespace-nowrap cursor-help">
+                    <Wallet className="h-3 w-3" />
+                    ${creditsBalance.toFixed(2)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('creditsRemaining')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -419,7 +440,7 @@ export const ChatInput = memo(function ChatInput({
                         aria-label="Set thinking level"
                       >
                         <Brain className="h-3.5 w-3.5" />
-                        <span>{THINKING_LABELS[getModelThinkingLevel(providerModel)]}</span>
+                        <span className="hidden sm:inline">{THINKING_LABELS[getModelThinkingLevel(providerModel)]}</span>
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
@@ -455,8 +476,8 @@ export const ChatInput = memo(function ChatInput({
             </Popover>
           )}
 
-          {/* Model Selector */}
-          <div className="flex-1 max-w-72 ml-auto overflow-hidden">
+          {/* Model Selector (own full-width row on small screens) */}
+          <div className="order-last basis-full min-w-0 overflow-hidden sm:order-none sm:basis-auto sm:flex-1 sm:max-w-72 sm:ml-auto">
             <ModelSelector
               value={providerModel}
               onChange={onProviderModelChange}
@@ -468,7 +489,7 @@ export const ChatInput = memo(function ChatInput({
           </div>
 
           {/* Send/Stop Button */}
-          <div>
+          <div className="ml-auto sm:ml-0">
             {isLoading ? (
               <Button
                 onClick={onStop}

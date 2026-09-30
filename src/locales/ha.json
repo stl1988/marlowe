@@ -505,5 +505,18 @@
   "failedToDuplicateProject": "An kasa kwafin aikin",
   "newProjectName": "Sunan Sabon Aikin",
   "duplicateProjectDescription": "Ƙirƙiri kwafin wannan aikin da sabon suna",
-  "resume": "Ci gaba"
+  "resume": "Ci gaba",
+  "creditsRemaining": "Sauran kiredit",
+  "ppqApiKeyRequired": "Ƙara maɓallin API ɗin PayPerQ a shafin „Gyara“ don ganin sauran kiredit ɗinka da ƙara kiredit.",
+  "paymentReceived": "An karɓi biya",
+  "paymentFailed": "Biya ya kasa",
+  "topupFailed": "Lissafin kuɗi ya ƙare ko biyan ya kasa.",
+  "refreshBalance": "Sabunta sauran kiredit",
+  "payWithWallet": "Biya da walat",
+  "sendToAddress": "Aika biya zuwa wannan adireshi",
+  "openCheckout": "Buɗe shafin biya",
+  "waitingForPayment": "Ana jiran biya…",
+  "topupLimits": "Mafi ƙaranci {{min}} · Mafi yawa {{max}}",
+  "lightningBonus": "Ƙarin 5% akan biyan Lightning",
+  "ppqCardHint": "Biyan kati da sarrafa asusu akwai a"
 }
