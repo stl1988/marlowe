@@ -682,6 +682,19 @@ export class SessionManager {
               completion_tokens: chunk.usage.completion_tokens || 0,
               cost,
             };
+
+            // Debug: helps reconcile client-side cost estimates with the
+            // provider's actual balance deduction (cache pricing, reasoning
+            // token surcharges, etc.)
+            const u = chunk.usage as Record<string, unknown>;
+            console.debug(
+              `[AI usage] ${providerModel} — prompt: ${usage.prompt_tokens}, completion: ${usage.completion_tokens}` +
+              (typeof u.prompt_cache_hit_tokens === 'number' ? `, cache-hit: ${u.prompt_cache_hit_tokens}` : '') +
+              (typeof u.prompt_cache_miss_tokens === 'number' ? `, cache-miss: ${u.prompt_cache_miss_tokens}` : '') +
+              (typeof u.cached_tokens === 'number' ? `, cached: ${u.cached_tokens}` : '') +
+              (typeof u.reasoning_tokens === 'number' ? `, reasoning: ${u.reasoning_tokens}` : '') +
+              (cost !== undefined ? `, provider-reported cost: $${cost}` : '')
+            );
           }
         }
 
@@ -976,6 +989,12 @@ export class SessionManager {
       const promptCost = model.pricing.prompt.times(usage.prompt_tokens);
       const completionCost = model.pricing.completion.times(usage.completion_tokens);
       const requestCost = promptCost.add(completionCost).toNumber();
+
+      console.debug(
+        `[AI cost] ${providerModel} — estimated $${requestCost.toFixed(6)} ` +
+        `(in ${usage.prompt_tokens} × $${model.pricing.prompt.times(1_000_000).toNumber()}/1M ` +
+        `+ out ${usage.completion_tokens} × $${model.pricing.completion.times(1_000_000).toNumber()}/1M)`
+      );
 
       // Update session total cost
       session.totalCost = (session.totalCost || 0) + requestCost;

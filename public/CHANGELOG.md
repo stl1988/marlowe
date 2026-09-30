@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.14.2] - 2026-09-30
+
+### Added
+- **Cost reconciliation debug logs**: every AI request now logs its token usage to the console — prompt/completion tokens, cache-hit/miss and reasoning token counts when the provider reports them, provider-reported cost when present — plus the client-side cost estimate with the exact per-token prices used. This makes it possible to reconcile Marlowe's session cost display with the actual balance deduction at credit-billing providers (e.g. PayPerQ) and identify pricing gaps (cache discounts, reasoning surcharges, routing price differences).
+
 ## [10.14.1] - 2026-09-30
 
 ### Fixed
