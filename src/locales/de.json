@@ -610,5 +610,9 @@
   "waitingForPayment": "Warte auf Zahlung…",
   "topupLimits": "Min. {{min}} · Max. {{max}}",
   "lightningBonus": "+5 % Bonus bei Lightning-Zahlungen",
-  "ppqCardHint": "Kartenzahlungen und Kontoverwaltung gibt es auf"
+  "ppqCardHint": "Kartenzahlungen und Kontoverwaltung gibt es auf",
+  "sendReasoningOn": "Reasoning-Verlauf: AN",
+  "sendReasoningOff": "Reasoning-Verlauf: AUS",
+  "sendReasoningOnHint": "Die Denkspuren der KI werden bei jeder Anfrage mitgesendet. Kostet mehr Input-Tokens, aber manche Provider/Modell-Kombinationen behalten so Kontext (und Cache) besser.",
+  "sendReasoningOffHint": "Denkspuren werden zwar angezeigt, aber nicht an den Provider zurückgesendet — das spart bei jeder Anfrage Input-Tokens."
 }

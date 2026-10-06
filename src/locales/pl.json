@@ -614,5 +614,9 @@
   "waitingForPayment": "Oczekiwanie na płatność…",
   "topupLimits": "Min. {{min}} · Maks. {{max}}",
   "lightningBonus": "+5% bonusu przy płatnościach Lightning",
-  "ppqCardHint": "Płatności kartą i zarządzanie kontem dostępne są na"
+  "ppqCardHint": "Płatności kartą i zarządzanie kontem dostępne są na",
+  "sendReasoningOn": "Historia rozumowania: WŁ.",
+  "sendReasoningOff": "Historia rozumowania: WYŁ.",
+  "sendReasoningOnHint": "Ślady rozumowania AI są odsyłane przy każdym zapytaniu. Kosztuje to więcej tokenów wejściowych, ale niektóre kombinacje dostawca/model lepiej zachowują kontekst (i pamięć podręczną) w ten sposób.",
+  "sendReasoningOffHint": "Ślady rozumowania są wyświetlane, ale nie odsyłane do dostawcy — to oszczędza tokeny wejściowe przy każdym zapytaniu."
 }

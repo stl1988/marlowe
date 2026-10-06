@@ -523,5 +523,9 @@
   "waitingForPayment": "等待付款…",
   "topupLimits": "最低 {{min}} · 最高 {{max}}",
   "lightningBonus": "闪电网络支付 +5% 奖励",
-  "ppqCardHint": "银行卡支付和账户管理请访问"
+  "ppqCardHint": "银行卡支付和账户管理请访问",
+  "sendReasoningOn": "推理历史：开",
+  "sendReasoningOff": "推理历史：关",
+  "sendReasoningOnHint": "AI 的思维过程会在每次请求时一并发送。这会消耗更多输入 token，但某些提供商/模型组合这样能更好地保留上下文（和缓存）。",
+  "sendReasoningOffHint": "思维过程会显示，但不会回传给提供商——这样可以在每次请求时节省输入 token。"
 }

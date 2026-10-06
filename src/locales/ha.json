@@ -518,5 +518,9 @@
   "waitingForPayment": "Ana jiran biya…",
   "topupLimits": "Mafi ƙaranci {{min}} · Mafi yawa {{max}}",
   "lightningBonus": "Ƙarin 5% akan biyan Lightning",
-  "ppqCardHint": "Biyan kati da sarrafa asusu akwai a"
+  "ppqCardHint": "Biyan kati da sarrafa asusu akwai a",
+  "sendReasoningOn": "Tarihin tunani: A KUNNE",
+  "sendReasoningOff": "Tarihin tunani: A KASHE",
+  "sendReasoningOnHint": "Ana sake aika alamun tunanin AI tare da kowace buƙata. Yana cin ƙarin alamun shigarwa, amma wasu haɗin mai samarwa/na'ura suna riƙe mahalli (da cache) mafi kyau haka.",
+  "sendReasoningOffHint": "Ana nuna alamun tunani amma ba a sake aika su zuwa mai samarwa ba — wannan yana tanadin alamun shigarwa a kowace buƙata."
 }

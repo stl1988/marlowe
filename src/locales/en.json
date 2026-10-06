@@ -611,5 +611,9 @@
   "waitingForPayment": "Waiting for payment…",
   "topupLimits": "Min. {{min}} · Max. {{max}}",
   "lightningBonus": "+5% bonus on Lightning payments",
-  "ppqCardHint": "Card payments and account management are available at"
+  "ppqCardHint": "Card payments and account management are available at",
+  "sendReasoningOn": "Reasoning history: ON",
+  "sendReasoningOff": "Reasoning history: OFF",
+  "sendReasoningOnHint": "The AI's thinking traces are sent back with every request. Costs more input tokens, but some provider/model combos keep better context (and cache) this way.",
+  "sendReasoningOffHint": "Thinking traces are displayed but not sent back to the provider — this saves input tokens on every request."
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.15.0] - 2026-09-30
+
+### Added
+- **Per-project "Reasoning history" toggle** (BrainCircuit icon in the chat input, next to Eco): controls whether assistant `reasoning_content` (thinking traces) is sent back to the provider with each request. Default is OFF — traces stay visible in the UI but are stripped at send time to save input tokens. Turning it ON can help provider/model combinations that keep better context or cache coherence when the reasoning is included (observed with Kimi K3 via PayPerQ). Persisted per project in `.git/shakespeare/settings.json`, applied on the very next generation step, translated into all 12 UI languages.
+
 ## [10.14.3] - 2026-09-30
 
 ### Fixed

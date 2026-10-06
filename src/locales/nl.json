@@ -610,5 +610,9 @@
   "waitingForPayment": "Wachten op betaling…",
   "topupLimits": "Min. {{min}} · Max. {{max}}",
   "lightningBonus": "+5% bonus bij Lightning-betalingen",
-  "ppqCardHint": "Kaartbetalingen en accountbeheer zijn beschikbaar op"
+  "ppqCardHint": "Kaartbetalingen en accountbeheer zijn beschikbaar op",
+  "sendReasoningOn": "Redeneergeschiedenis: AAN",
+  "sendReasoningOff": "Redeneergeschiedenis: UIT",
+  "sendReasoningOnHint": "De denksporen van de AI worden bij elke aanvraag meegestuurd. Kost meer invoertokens, maar sommige provider/model-combinaties behouden zo beter context (en cache).",
+  "sendReasoningOffHint": "Denksporen worden wel getoond maar niet teruggestuurd naar de provider — dat bespaart invoertokens bij elke aanvraag."
 }

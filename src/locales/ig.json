@@ -515,5 +515,9 @@
   "waitingForPayment": "Na-echere ịkwụ ụgwọ…",
   "topupLimits": "Kacha nta {{min}} · Kacha ukwu {{max}}",
   "lightningBonus": "+5% ngwa maka ịkwụ ụgwọ Lightning",
-  "ppqCardHint": "Ịkwụ ụgwọ kaadị na njikwa akaụntụ dị na"
+  "ppqCardHint": "Ịkwụ ụgwọ kaadị na njikwa akaụntụ dị na",
+  "sendReasoningOn": "Akụkọ echiche: ON",
+  "sendReasoningOff": "Akụkọ echiche: OFF",
+  "sendReasoningOnHint": "A na-ezigharị ihe echiche AI na arịrị ọ bụla. Ọ na-eri ọtụtụ token ntinye, mana ụfọdụ ndakọrịta onye na-ejere ozi/ụdị na-edebe ihe gburugburu (na cache) nke ọma otú ahụ.",
+  "sendReasoningOffHint": "A na-egosi ihe echiche ma a naghị ezigharị ha na onye na-ejere ozi — nke a na-echekwa token ntinye na arịrị ọ bụla."
 }

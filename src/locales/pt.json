@@ -527,5 +527,9 @@
   "waitingForPayment": "Aguardando pagamento…",
   "topupLimits": "Mín. {{min}} · Máx. {{max}}",
   "lightningBonus": "+5% de bónus em pagamentos Lightning",
-  "ppqCardHint": "Pagamentos com cartão e gestão da conta estão disponíveis em"
+  "ppqCardHint": "Pagamentos com cartão e gestão da conta estão disponíveis em",
+  "sendReasoningOn": "Histórico de raciocínio: LIGADO",
+  "sendReasoningOff": "Histórico de raciocínio: DESLIGADO",
+  "sendReasoningOnHint": "Os raciocínios da IA são reenviados em cada pedido. Custa mais tokens de entrada, mas algumas combinações fornecedor/modelo mantêm melhor o contexto (e a cache) assim.",
+  "sendReasoningOffHint": "Os raciocínios são mostrados mas não reenviados ao fornecedor — poupando tokens de entrada em cada pedido."
 }

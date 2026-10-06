@@ -515,5 +515,9 @@
   "waitingForPayment": "Nduro de isanwo…",
   "topupLimits": "Kéré jù {{min}} · Pọ́n jù {{max}}",
   "lightningBonus": "Àfikún 5% fún ìsanwó Lightning",
-  "ppqCardHint": "Ìsanwó káàdì àti ìṣàkóso àkáǹtì wà ní"
+  "ppqCardHint": "Ìsanwó káàdì àti ìṣàkóso àkáǹtì wà ní",
+  "sendReasoningOn": "Ìtàn ìrònú: TI A ṢÍ",
+  "sendReasoningOff": "Ìtàn ìrònú: TI A PA",
+  "sendReasoningOnHint": "Àwọn àmì ìrònú AI jẹ́ kí wọ́n tún fi ránṣẹ́ pẹ̀lú gbogbo ìbéèrè. Ó ń ná àwọn tókìǹkìn ìsísọ àtẹ̀lélọ́, ṣùgbọ́n àwọn àpọ̀ olùpèsè/àwoṣe kan ń pa àyíká àti cache mọ́ dáa bẹ́ẹ̀.",
+  "sendReasoningOffHint": "A fi àwọn àmì ìrònú hàn ṣùgbọ́n kò fi wọ́n ránṣẹ́ sí olùpèsè — èyí ń fipamọ́ àwọn tókìǹkìn ìsísọ àtẹ̀lélọ́ ní gbogbo ìbéèrè."
 }

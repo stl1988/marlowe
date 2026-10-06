@@ -51,6 +51,7 @@ import { TodoWriteTool } from '@/lib/tools/TodoWriteTool';
 import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
 import { useEconomyMode } from '@/hooks/useEconomyMode';
+import { useSendReasoning } from '@/hooks/useSendReasoning';
 import { useAICredits } from '@/hooks/useAICredits';
 import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
 import { ReadBipTool } from '@/lib/tools/ReadBipTool';
@@ -127,6 +128,9 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
 
   // Economy mode — per-project credit-saving toggle
   const { economyMode, toggleEconomyMode } = useEconomyMode(projectId);
+
+  // Send reasoning history — per-project toggle for reasoning-context providers
+  const { sendReasoning, toggleSendReasoning } = useSendReasoning(projectId);
   const [templateInfo, setTemplateInfo] = useState<{ name: string; description: string; url: string } | null>(null);
   const [showTemplateInfo, setShowTemplateInfo] = useState(false);
   const [showToolsDialog, setShowToolsDialog] = useState(false);
@@ -1076,6 +1080,8 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         onNewChat={requestNewChat}
         economyMode={economyMode}
         onToggleEconomyMode={toggleEconomyMode}
+        sendReasoning={sendReasoning}
+        onToggleSendReasoning={toggleSendReasoning}
       />
 
       {/* Onboarding Dialog */}

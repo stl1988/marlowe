@@ -610,5 +610,9 @@
   "waitingForPayment": "En attente du paiement…",
   "topupLimits": "Min. {{min}} · Max. {{max}}",
   "lightningBonus": "+5 % de bonus sur les paiements Lightning",
-  "ppqCardHint": "Les paiements par carte et la gestion du compte sont disponibles sur"
+  "ppqCardHint": "Les paiements par carte et la gestion du compte sont disponibles sur",
+  "sendReasoningOn": "Historique de raisonnement : ACTIVÉ",
+  "sendReasoningOff": "Historique de raisonnement : DÉSACTIVÉ",
+  "sendReasoningOnHint": "Les raisonnements de l'IA sont renvoyés à chaque requête. Cela coûte plus de jetons en entrée, mais certaines combinaisons fournisseur/modèle conservent mieux le contexte (et le cache) ainsi.",
+  "sendReasoningOffHint": "Les raisonnements sont affichés mais ne sont pas renvoyés au fournisseur — cela économise des jetons d'entrée à chaque requête."
 }

@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf, Wallet } from 'lucide-react';
+import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf, Wallet, BrainCircuit } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
 import {
   Popover,
@@ -50,6 +50,9 @@ interface ChatInputProps {
   onNewChat?: () => void;
   economyMode?: boolean;
   onToggleEconomyMode?: () => void;
+  /** Whether reasoning traces are sent back to the provider (default: false) */
+  sendReasoning?: boolean;
+  onToggleSendReasoning?: () => void;
 }
 
 const THINKING_LABELS: Record<ThinkingLevel, string> = {
@@ -92,6 +95,8 @@ export const ChatInput = memo(function ChatInput({
   onNewChat,
   economyMode = false,
   onToggleEconomyMode,
+  sendReasoning = false,
+  onToggleSendReasoning,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const { getModelThinkingLevel, setModelThinkingLevel } = useAISettings();
@@ -417,6 +422,39 @@ export const ChatInput = memo(function ChatInput({
                     {economyMode
                       ? 'AI will minimise tool calls, skip unnecessary reads, and keep replies short to save credits.'
                       : 'Click to enable credit-saving mode. The AI will be instructed to use fewer tool calls and write shorter replies.'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Reasoning History Toggle */}
+          {onToggleSendReasoning && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onToggleSendReasoning}
+                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                      sendReasoning
+                        ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400 hover:bg-sky-500/25'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                    aria-pressed={sendReasoning}
+                    aria-label="Toggle sending reasoning history to the provider"
+                  >
+                    <BrainCircuit className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium mb-1">
+                    {sendReasoning ? t('sendReasoningOn') : t('sendReasoningOff')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {sendReasoning
+                      ? t('sendReasoningOnHint')
+                      : t('sendReasoningOffHint')}
                   </p>
                 </TooltipContent>
               </Tooltip>

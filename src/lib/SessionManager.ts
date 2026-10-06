@@ -363,9 +363,11 @@ export class SessionManager {
 
         // Read economy mode setting for this project
         let economyMode = false;
+        let sendReasoning = false;
         try {
           const dotaiForEconomy = new DotAI(this.fs, cwd);
           economyMode = await dotaiForEconomy.readEconomyMode();
+          sendReasoning = await dotaiForEconomy.readSendReasoning();
         } catch {
           // Default to false if reading fails
         }
@@ -492,9 +494,13 @@ export class SessionManager {
           messages = stripImageUrls(messages);
         }
 
-        // Never re-send reasoning content — it would be re-billed as input
-        // tokens on every turn and providers don't need it back.
-        messages = stripReasoningContent(messages);
+        // By default, reasoning content is stripped before sending — it would
+        // be re-billed as input tokens on every turn and providers don't need
+        // it back. Can be re-enabled per project for provider/model combos
+        // that behave better with reasoning in context (e.g. cache coherence).
+        if (!sendReasoning) {
+          messages = stripReasoningContent(messages);
+        }
 
         // Economy mode: elide older tool outputs to keep the re-sent context small
         if (economyMode) {
