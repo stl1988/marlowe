@@ -34,7 +34,7 @@ export function useOffline() {
       const cacheNames = await caches.keys();
       await Promise.all(
         cacheNames
-          .filter(name => name.startsWith('workbox-') || name.includes('shakespeare'))
+          .filter(name => name.startsWith('workbox-') || name.startsWith('marlowe-') || name.includes('shakespeare'))
           .map(name => caches.delete(name))
       );
       console.log('[Cache] Cleared all caches');

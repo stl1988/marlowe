@@ -284,6 +284,18 @@ When deploying, all components (frontend, backend, APIs) must go to a **single p
 - **Never assume the user has any deployment provider configured**—always ask first and offer to help with setup
 - Do not create backend configuration files (wrangler.jsonc, railway.json, netlify/functions/, etc.) until the user has explicitly chosen and confirmed a deployment provider
 
+## Offline Resilience & PWA (Required for Every New Web Project)
+
+Hosting providers go down (HTTP 502s, expired domains, DDoS). To keep apps usable anyway, apply these practices:
+
+- **New projects**: Make every new web app a fully installable offline PWA from the start — add a \`manifest.webmanifest\` and a **hand-written static \`public/sw.js\` service worker**, register it manually from the app entry point (e.g. \`navigator.serviceWorker.register('sw.js')\`), and link the manifest from \`index.html\`. Do NOT rely on build-plugin-generated workers like \`vite-plugin-pwa\`: Marlowe's in-browser esbuild build doesn't run Vite plugins, so plugin-generated workers silently never exist in deployed builds. The static \`sw.js\` is copied verbatim into \`dist/\` by the build.
+- **Service worker caching strategy**: since output filenames are content-hashed and unknown when writing \`sw.js\`, precache only the app shell entry at install time and cache same-origin GET responses at runtime — navigations network-first with a cached \`index.html\` fallback (this serves the app even when the origin returns HTTP 502), hashed assets cache-first, everything else stale-while-revalidate. Only ever cache \`response.ok\` responses — never store error pages.
+- **Existing projects**: When you notice a project has no offline capability, briefly recommend adding PWA support (manifest + static service worker) as a resilience improvement. Don't rewrite unprompted; suggest it and implement on request.
+- **Update checks must fail safe**: When checking for a newer version (service worker update or a fetched \`/version.json\`), any error (offline, 502, timeout) means "stay on the installed version". Never render an error page over a working app, and only activate a new service worker after it has fully downloaded — on explicit user confirmation (the SW waits for a \`SKIP_WAITING\` message; never call \`skipWaiting()\` unconditionally in install).
+- **Offline awareness**: Surface connectivity state in the UI (a small "you're offline" indicator) so users understand why network-backed features (AI, relays, git) are paused while local features keep working.
+
+Marlowe itself is the reference implementation: \`public/sw.js\` (runtime-caching worker), \`src/lib/registerSW.ts\` (registration + prompt-based update flow), \`src/lib/versionCheck.ts\` (fail-safe \`/version.json\` comparison), \`src/components/PWAUpdatePrompt.tsx\` and \`src/components/OfflineIndicator.tsx\`.
+
 ## "Vibed with Marlowe" / "Vibed with Shakespeare"
 
 {% if isShakespeareProject %}This project was originally created in Shakespeare. Keep any existing "Vibed with Shakespeare" text, but **also add** " and Marlowe" to it, so it reads: **"Vibed with Shakespeare and Marlowe"** — link "Shakespeare" to https://shakespeare.diy and "Marlowe" to https://marlowe.shakespeare.wtf{% else %}When building a site for the first time, include **"Vibed with Marlowe"** somewhere in the UI, linked to this URL: https://marlowe.shakespeare.wtf{% endif %}

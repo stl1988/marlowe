@@ -15,6 +15,9 @@ https://marlowe.shakespeare.wtf
 - **Redeem gift cards** with shareable links for instant credits
 - **Economy Mode** — a per-project credit saver that works on two levels: prompt instructions for the AI *and* technical enforcement (old tool outputs are elided from the re-sent context, step budget capped). Assistant reasoning traces are never re-sent to providers
 - **Live file-writing preview** — watch files grow in the chat while the AI streams `write`/`edit` tool calls, with a blinking cursor and live line counter
+- **Live build progress and background keep-alive** — current build phase, file counters and a visible indicator while the tab is protected during AI work
+- **Offline-first, installable PWA** — hand-written service worker (no Vite PWA plugin), cached app shell for hoster outages, fail-safe confirmed updates, offline banner and install hint
+- **Offline PWAs by default** — the system prompt requires new web projects to ship a manifest, static service worker and offline indicator; no Vite PWA plugin required
 - **Syntax-highlighted code view** — Prism-based highlighting for ~20 web languages in the file editor and chat code blocks
 - **12 UI languages** — English, German, Spanish, French, Italian, Dutch, Polish, Portuguese, Chinese, Hausa, Yoruba, Igbo
 - **Nostr Settings Sync (NIP-78)** — back up and restore all settings across devices, NIP-44 encrypted to your own key

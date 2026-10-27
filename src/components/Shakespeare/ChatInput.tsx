@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { FileAttachment } from '@/components/ui/file-attachment';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
-import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf, Wallet, BrainCircuit } from 'lucide-react';
+import { Square, ArrowUp, PlusSquare, AlertTriangle, Leaf, Wallet, BrainCircuit, AudioLines } from 'lucide-react';
 import { ModelSelector } from '@/components/ModelSelector';
 import {
   Popover,
@@ -41,6 +41,8 @@ interface ChatInputProps {
   totalCost: number;
   /** Remaining credit balance for the current provider (e.g. PayPerQ), if available */
   creditsBalance?: number;
+  /** Whether background keep-alive audio is actually playing. */
+  keepAliveActive?: boolean;
   isDragOver: boolean;
   onDragEnter: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
@@ -86,6 +88,7 @@ export const ChatInput = memo(function ChatInput({
   lastInputTokens,
   totalCost,
   creditsBalance,
+  keepAliveActive = false,
   isDragOver,
   onDragEnter,
   onDragOver,
@@ -391,6 +394,26 @@ export const ChatInput = memo(function ChatInput({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{t('creditsRemaining')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {/* Keep-alive indicator: visible only while audio is actually playing */}
+          {keepAliveActive && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium bg-teal-500/15 text-teal-600 dark:text-teal-400 cursor-help"
+                    aria-label={t('keepAliveActive')}
+                  >
+                    <AudioLines className="h-3.5 w-3.5" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="font-medium mb-1">{t('keepAliveActive')}</p>
+                  <p className="text-xs text-muted-foreground">{t('keepAliveActiveHint')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

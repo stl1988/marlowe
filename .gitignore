@@ -37,3 +37,6 @@ electron-dist
 !.env.example
 .ai/
 *.keystore
+
+# Generated during production builds; browser builds generate it in dist/.
+public/version.json

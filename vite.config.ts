@@ -4,7 +4,6 @@ import path from "node:path";
 
 import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vitest/config";
-import { VitePWA } from 'vite-plugin-pwa';
 
 const require = createRequire(import.meta.url);
 const pkg = require("./package.json") as { version: string };
@@ -41,22 +40,7 @@ export default defineConfig(() => ({
     'import.meta.env.COMMIT_SHA': JSON.stringify(getCommitSha()),
     'import.meta.env.COMMIT_TAG': JSON.stringify(getCommitTag()),
   },
-  plugins: [
-    react(),
-    VitePWA({
-      includeAssets: ['marlowe.svg', 'marlowe-maskable.svg', 'marlowe-icon.webp', 'icon-1024.png', 'icon-maskable-1024.png', 'sine.mp3', 'CHANGELOG.md'],
-      manifest: false, // Use existing manifest.webmanifest from public folder
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,wasm,mp3}'],
-        maximumFileSizeToCacheInBytes: 15 * 1024 * 1024, // 15 MB (to accommodate esbuild.wasm at ~12 MB)
-        cleanupOutdatedCaches: true,
-      },
-      devOptions: {
-        enabled: false,
-        type: 'module'
-      }
-    })
-  ],
+  plugins: [react()],
   build: {
     sourcemap: true,
   },

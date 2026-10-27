@@ -13,16 +13,31 @@ import type { WorkerMatch, AssetMatch } from "./workerPlugin";
 import type { JSRuntimeFS } from '@/lib/JSRuntime';
 import type { Plugin } from 'esbuild-wasm';
 
+export type BuildPhase = 'init' | 'bundle' | 'workers' | 'assets' | 'write' | 'public' | 'done';
+
+export interface BuildProgress {
+  phase: BuildPhase;
+  current?: number;
+  total?: number;
+  detail?: string;
+}
+
 export interface BuildProjectOptions {
   fs: JSRuntimeFS;
   projectPath: string;
   domParser: DOMParser;
+  /** Version metadata for the application being built (not the running Marlowe app). */
+  versionInfo?: { version: string; buildDate: string };
   target?: string;
   outputPath?: string;
   esmUrl: string;
+  /** Called for every pipeline phase; also mirrored as a buildProgress window event. */
+  onProgress?: (progress: BuildProgress) => void;
 }
 
 export interface PackageJson {
+  name?: string;
+  version?: string;
   dependencies?: { [key: string]: string };
   devDependencies?: { [key: string]: string };
   peerDependencies?: { [key: string]: string };
@@ -190,7 +205,8 @@ export function createPlugins(
 async function bundle(
   options: BuildProjectOptions,
 ): Promise<Record<string, Uint8Array>> {
-  const { fs, projectPath, domParser, target = "esnext", esmUrl } = options;
+  const { fs, projectPath, domParser, target = "esnext", esmUrl, onProgress } = options;
+  onProgress?.({ phase: 'init' });
   const esbuild = await getEsbuild();
 
   const indexHtmlText = await fs.readFile(
@@ -200,6 +216,18 @@ async function bundle(
 
   // Read build context (package.json, package-lock.json, tsconfig.json)
   const context = await readBuildContext(fs, projectPath);
+  const versionInfo = {
+    // Ordinary projects carry their own version. When rebuilding Marlowe
+    // itself, use the currently running app version to avoid an update loop.
+    version: context.packageJson.name === 'marlowe' && options.versionInfo
+      ? options.versionInfo.version
+      : context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
+    buildDate: options.versionInfo?.buildDate ?? new Date().toISOString(),
+  };
+  const importMetaEnv = {
+    VERSION: versionInfo.version,
+    BUILD_DATE: versionInfo.buildDate,
+  };
 
   const doc = domParser.parseFromString(indexHtmlText, "text/html");
   const entryPoints: string[] = [];
@@ -245,6 +273,7 @@ async function bundle(
   const collectedWorkers: WorkerMatch[] = [];
   const collectedAssets: AssetMatch[] = [];
 
+  onProgress?.({ phase: 'bundle' });
   const results = await esbuild.build({
     entryPoints,
     bundle: true,
@@ -263,7 +292,7 @@ async function bundle(
       collectAssets: collectedAssets,
     }),
     define: {
-      "import.meta.env": JSON.stringify({}),
+      "import.meta.env": JSON.stringify(importMetaEnv),
     },
   });
 
@@ -302,10 +331,19 @@ async function bundle(
   const placeholderToFilename = new Map<string, string>();
   const workerQueue: WorkerMatch[] = [...collectedWorkers];
   const seenWorkerPaths = new Set<string>();
+  let workersProcessed = 0;
 
   while (workerQueue.length > 0) {
     const nextBatch = workerQueue.splice(0, workerQueue.length);
-    for (const worker of nextBatch) {
+    for (let batchIndex = 0; batchIndex < nextBatch.length; batchIndex++) {
+      const worker = nextBatch[batchIndex];
+      workersProcessed++;
+      onProgress?.({
+        phase: 'workers',
+        current: workersProcessed,
+        total: workersProcessed + (nextBatch.length - batchIndex - 1) + workerQueue.length,
+        detail: worker.resolvedPath.split('/').pop(),
+      });
       if (seenWorkerPaths.has(worker.resolvedPath)) {
         // Reuse the output from the prior build of this same worker.
         const existing = findPlaceholderForPath(placeholderToFilename, worker.resolvedPath);
@@ -339,7 +377,7 @@ async function bundle(
           collectAssets: collectedAssets,
         }),
         define: {
-          "import.meta.env": JSON.stringify({}),
+          "import.meta.env": JSON.stringify(importMetaEnv),
         },
       });
 
@@ -380,7 +418,15 @@ async function bundle(
   // Copy each unique collected asset into the output directory with
   // a content-hashed filename.
   const assetPathToFilename = new Map<string, string>();
+  let assetsProcessed = 0;
   for (const asset of collectedAssets) {
+    assetsProcessed++;
+    onProgress?.({
+      phase: 'assets',
+      current: assetsProcessed,
+      total: collectedAssets.length,
+      detail: asset.resolvedPath.split('/').pop(),
+    });
     let outName = assetPathToFilename.get(asset.resolvedPath);
     if (!outName) {
       const bytes = await fs.readFile(asset.resolvedPath);
@@ -484,75 +530,97 @@ export async function buildProject(options: BuildProjectOptions): Promise<{
   projectId?: string;
 }> {
   const { fs, projectPath, outputPath = `${projectPath}/dist` } = options;
-
-  // Check if index.html exists
-  try {
-    await fs.readFile(`${projectPath}/index.html`, "utf8");
-  } catch {
-    throw new Error(`❌ Could not find index.html at ${projectPath}. This is required for building the project.`);
-  }
-
-  // Run the build
-  const dist = await bundle(options);
-
-  // Delete all existing files in output directory
-  try {
-    const distFiles = await fs.readdir(outputPath);
-    for (const file of distFiles) {
-      await fs.unlink(`${outputPath}/${file}`);
-    }
-  } catch {
-    // Ignore errors (e.g., directory doesn't exist)
-  }
-
-  // Create output directory if it doesn't exist
-  await fs.mkdir(outputPath, { recursive: true });
-
-  // Write all built files to output directory
-  for (const [path, contents] of Object.entries(dist)) {
-    await fs.writeFile(`${outputPath}/${path}`, contents);
-  }
-
-  // Copy files from public directory if it exists
-  try {
-    const publicPath = `${projectPath}/public`;
-    const stat = await fs.stat(publicPath);
-    if (stat.isDirectory()) {
-      await copyFiles(fs, fs, publicPath, outputPath);
-    }
-  } catch {
-    // Public directory doesn't exist, which is fine
-  }
-
-  // Copy NIP.md if it exists in project root
-  try {
-    const nipMdPath = `${projectPath}/NIP.md`;
-    const nipMdStat = await fs.stat(nipMdPath);
-    if (nipMdStat.isFile()) {
-      const nipMdContent = await fs.readFile(nipMdPath);
-      await fs.writeFile(`${outputPath}/NIP.md`, nipMdContent);
-    }
-  } catch {
-    // NIP.md doesn't exist, which is fine
-  }
-
-  // Extract project ID from the project path
-  // Expected format: /projects/{projectId}
   const projectId = projectPath.split('/').pop();
 
-  // Emit build completion event for PreviewPane to listen to
-  if (projectId && typeof window !== 'undefined') {
-    const buildCompleteEvent = new CustomEvent('buildComplete', {
-      detail: { projectId }
-    });
-    window.dispatchEvent(buildCompleteEvent);
-  }
-
-  return {
-    files: dist,
-    outputPath,
-    projectId,
+  const reportProgress = (event: BuildProgress) => {
+    options.onProgress?.(event);
+    if (projectId && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('buildProgress', {
+        detail: { projectId, ...event },
+      }));
+    }
   };
+
+  try {
+    // Check if index.html exists
+    try {
+      await fs.readFile(`${projectPath}/index.html`, "utf8");
+    } catch {
+      throw new Error(`❌ Could not find index.html at ${projectPath}. This is required for building the project.`);
+    }
+
+    // Run the build
+    const dist = await bundle({ ...options, onProgress: reportProgress });
+
+    // Delete all existing files in output directory
+    try {
+      const distFiles = await fs.readdir(outputPath);
+      for (const file of distFiles) {
+        await fs.unlink(`${outputPath}/${file}`);
+      }
+    } catch {
+      // Ignore errors (e.g., directory doesn't exist)
+    }
+
+    // Create output directory if it doesn't exist
+    await fs.mkdir(outputPath, { recursive: true });
+
+    // Write all built files to output directory
+    const distEntries = Object.entries(dist);
+    let filesWritten = 0;
+    for (const [path, contents] of distEntries) {
+      filesWritten++;
+      reportProgress({ phase: 'write', current: filesWritten, total: distEntries.length, detail: path });
+      await fs.writeFile(`${outputPath}/${path}`, contents);
+    }
+
+    // Copy files from public directory if it exists
+    reportProgress({ phase: 'public' });
+    try {
+      const publicPath = `${projectPath}/public`;
+      const stat = await fs.stat(publicPath);
+      if (stat.isDirectory()) {
+        await copyFiles(fs, fs, publicPath, outputPath);
+      }
+    } catch {
+      // Public directory doesn't exist, which is fine
+    }
+
+    // Always emit fresh update metadata after public/ has been copied. Use the
+    // same build timestamp as the bundle, and never replace a valid generated
+    // version file with the unknown-version fallback after a read failure.
+    const versionJson = JSON.stringify(versionInfo, null, 2) + '\n';
+    await fs.writeFile(`${outputPath}/version.json`, new TextEncoder().encode(versionJson));
+
+    // Copy NIP.md if it exists in project root
+    try {
+      const nipMdPath = `${projectPath}/NIP.md`;
+      const nipMdStat = await fs.stat(nipMdPath);
+      if (nipMdStat.isFile()) {
+        const nipMdContent = await fs.readFile(nipMdPath);
+        await fs.writeFile(`${outputPath}/NIP.md`, nipMdContent);
+      }
+    } catch {
+      // NIP.md doesn't exist, which is fine
+    }
+
+    // Emit build completion event for PreviewPane to listen to
+    if (projectId && typeof window !== 'undefined') {
+      const buildCompleteEvent = new CustomEvent('buildComplete', {
+        detail: { projectId },
+      });
+      window.dispatchEvent(buildCompleteEvent);
+    }
+
+    return {
+      files: dist,
+      outputPath,
+      projectId,
+    };
+  } finally {
+    // Reset progress on success and on every failure path.
+    reportProgress({ phase: 'done' });
+  }
 }
 
 async function fileExists(fs: JSRuntimeFS, path: string): Promise<boolean> {

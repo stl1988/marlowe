@@ -402,7 +402,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
   }, [builtInTools, mcpOpenAITools, disabledBuiltinTools]);
 
   // Keep-alive functionality to prevent tab throttling during AI processing
-  const { updateMetadata } = useKeepAlive({
+  const { updateMetadata, isActive: keepAliveActive } = useKeepAlive({
     enabled: externalIsLoading || isBuildLoading,
     title: 'Marlowe',
     artist: `Working on ${projectId}...`,
@@ -1071,6 +1071,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         lastInputTokens={lastInputTokens}
         totalCost={totalCost}
         creditsBalance={creditsData?.amount}
+        keepAliveActive={keepAliveActive}
         isDragOver={isDragOver}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}

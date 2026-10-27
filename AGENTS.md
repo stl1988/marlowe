@@ -224,6 +224,18 @@ Marlowe supports fal.ai as an image generation provider (Settings → AI → Adv
 - **Resolution**: `resolveImageModel()` in `src/lib/falai.ts` is the single source of truth for the effective image model — used by both `ChatPane` (tool wiring) and `SessionManager` (system prompt), so the prompt always states what the tools actually use. `readAISettings` drops image model settings pointing at unconfigured providers
 - **Detection**: `isFalProvider()` matches provider id `fal` or any `*.fal.run` baseURL, so custom providers pointing at fal.ai work too
 
+### Offline Resilience & PWA (Required for Every New Web Project)
+
+Hosting providers go down (HTTP 502s, expired domains, DDoS). To keep apps usable anyway:
+
+- **New projects**: Make every new web app a fully installable offline PWA from the start — add a `manifest.webmanifest` and a **hand-written static `public/sw.js` service worker**, register it manually from the app entry point (e.g. `navigator.serviceWorker.register('sw.js')`), and link the manifest from `index.html`. Do NOT rely on build-plugin-generated workers like `vite-plugin-pwa`: Marlowe's in-browser esbuild build doesn't run Vite plugins, so plugin-generated workers silently never exist in deployed builds. The static `sw.js` is copied verbatim into `dist/` by the build.
+- **Service worker caching strategy**: since output filenames are content-hashed and unknown when writing `sw.js`, precache only the app shell entry at install time and cache same-origin GET responses at runtime — navigations network-first with a cached `index.html` fallback (this serves the app even when the origin returns HTTP 502), hashed assets cache-first, everything else stale-while-revalidate. Only ever cache `response.ok` responses — never store error pages.
+- **Existing projects**: When you notice a project has no offline capability, briefly recommend adding PWA support (manifest + static service worker) as a resilience improvement. Don't rewrite unprompted; suggest it and implement on request.
+- **Update checks must fail safe**: When checking for a newer version (service worker update or a fetched `/version.json`), any error (offline, 502, timeout) means "stay on the installed version". Never render an error page over a working app, and only activate a new service worker after it has fully downloaded — on explicit user confirmation (the SW waits for a `SKIP_WAITING` message; never call `skipWaiting()` unconditionally in install).
+- **Offline awareness**: Surface connectivity state in the UI (a small "you're offline" indicator) so users understand why network-backed features (AI, relays, git) are paused while local features keep working.
+
+Marlowe itself is the reference implementation: `public/sw.js` (runtime-caching worker), `src/lib/registerSW.ts` (registration + prompt-based update flow), `src/lib/versionCheck.ts` (fail-safe `/version.json` comparison), `src/components/PWAUpdatePrompt.tsx` and `src/components/OfflineIndicator.tsx`.
+
 ## AI Message Format
 
 Marlowe uses OpenAI-compatible messages for communication between users and AI assistants. The message format follows these conventions:

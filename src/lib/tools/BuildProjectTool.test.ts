@@ -73,6 +73,7 @@ describe('BuildProjectTool', () => {
       fs: mockFS,
       projectPath: '/test/project',
       domParser: expect.any(DOMParser),
+      versionInfo: expect.objectContaining({ version: expect.any(String), buildDate: expect.any(String) }),
     });
 
     expect(result.content).toContain('✅ Successfully built project!');
@@ -103,6 +104,7 @@ describe('BuildProjectTool', () => {
       fs: mockFS,
       projectPath: '/test/project',
       domParser: expect.any(DOMParser),
+      versionInfo: expect.objectContaining({ version: expect.any(String), buildDate: expect.any(String) }),
     });
   });
 

@@ -27,6 +27,7 @@ import { useAppContext } from '@/hooks/useAppContext';
 import { isMediaFile } from '@/lib/fileUtils';
 import { deriveIframeSubdomain } from '@/lib/iframeSubdomain';
 import { downloadFolderAsZip } from '@/lib/zipExport';
+import type { BuildProgress } from '@/lib/build';
 import { useToast } from '@/hooks/useToast';
 import { useSessionSubscription } from '@/hooks/useSessionSubscription';
 import { getPreviewInjectedScript } from '@/lib/previewInjectedScript';
@@ -115,6 +116,7 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
   const { toast } = useToast();
 
   const { mutate: buildProject, isPending: isBuildLoading } = useBuildProject(projectId);
+  const [buildProgress, setBuildProgress] = useState<BuildProgress | null>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [shouldBuild, setShouldBuild] = useState(false);
@@ -584,6 +586,37 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
     return () => window.removeEventListener('buildComplete', handleBuildComplete as EventListener);
   }, [projectId, checkForBuiltProject, refreshIframe]);
 
+  // BuildProject emits this itself, so AI tool builds are visible too.
+  useEffect(() => {
+    const handleBuildProgress = (event: Event) => {
+      const detail = (event as CustomEvent<BuildProgress & { projectId?: string }>).detail;
+      if (detail?.projectId !== projectId) return;
+      setBuildProgress(detail.phase === 'done' ? null : {
+        phase: detail.phase,
+        current: detail.current,
+        total: detail.total,
+        detail: detail.detail,
+      });
+    };
+    window.addEventListener('buildProgress', handleBuildProgress);
+    return () => window.removeEventListener('buildProgress', handleBuildProgress);
+  }, [projectId]);
+
+  const isBuilding = isBuildLoading || buildProgress !== null;
+  const buildPhaseLabel = useMemo(() => {
+    if (!buildProgress) return t('building');
+    const counts = { current: buildProgress.current ?? 0, total: buildProgress.total ?? 0 };
+    switch (buildProgress.phase) {
+      case 'init': return t('buildPhaseInit');
+      case 'bundle': return t('buildPhaseBundle');
+      case 'workers': return t('buildPhaseWorkers', counts);
+      case 'assets': return t('buildPhaseAssets', counts);
+      case 'write': return t('buildPhaseWrite', counts);
+      case 'public': return t('buildPhasePublic');
+      default: return t('building');
+    }
+  }, [buildProgress, t]);
+
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
     if (isMobile) {
@@ -708,16 +741,16 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                         console.error('Build failed:', error);
                       }
                     })}
-                    disabled={isBuildLoading}
+                    disabled={isBuilding}
                     className="h-8 gap-2"
-                    title={t('buildButtonTooltip')}
+                    title={isBuilding ? buildPhaseLabel : t('buildButtonTooltip')}
                   >
-                    {isBuildLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    {isBuilding ? (
+                      <Loader2 className="h-4 w-4 animate-spin flex-shrink-0" />
                     ) : (
                       <Hammer className="h-4 w-4" />
                     )}
-                    <span className="hidden lg:inline">Build</span>
+                    <span className="hidden lg:inline max-w-48 truncate">{isBuilding ? buildPhaseLabel : t('build')}</span>
                   </Button>
                   {/* Download built site (dist folder) button */}
                   <Button
@@ -853,23 +886,23 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                                   }
                                 });
                               }}
-                              disabled={isBuildLoading}
+                              disabled={isBuilding}
                               className="gap-2"
                             >
-                              {isBuildLoading ? (
+                              {isBuilding ? (
                                 <>
                                   <Loader2 className="h-4 w-4 animate-spin" />
-                                  Building...
+                                  {buildPhaseLabel}
                                 </>
                               ) : buildError ? (
                                 <>
                                   <RefreshCw className="h-4 w-4" />
-                                  Retry
+                                  {t('retry')}
                                 </>
                               ) : (
                                 <>
                                   <Hammer className="h-4 w-4" />
-                                  Build
+                                  {t('build')}
                                 </>
                               )}
                             </Button>
@@ -998,14 +1031,17 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
                 </ResizablePanelGroup>
               </div>
 
-              {/* Build loading overlay */}
-              {isBuildLoading && (
+              {/* Build progress overlay, shared by toolbar/file-save/AI builds */}
+              {isBuilding && (
                 <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center z-10">
-                  <div className="bg-background/90 border rounded-lg p-4 shadow-lg flex items-center gap-3">
+                  <div className="bg-background/90 border rounded-lg p-4 shadow-lg flex items-center gap-3" role="status" aria-live="polite">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     <div className="flex flex-col">
-                      <span className="text-sm font-medium">Building project...</span>
-                      <span className="text-xs text-muted-foreground">Preview will update automatically</span>
+                      <span className="text-sm font-medium">{buildPhaseLabel}</span>
+                      <span className="text-xs text-muted-foreground">{t('buildPreviewUpdate')}</span>
+                      {buildProgress?.detail && (
+                        <span className="text-xs text-muted-foreground truncate max-w-72 font-mono">{buildProgress.detail}</span>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -22,12 +22,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links: open shakespeare.diy URLs in the app -->
+            <!-- Deep links: open Marlowe URLs in the app -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="shakespeare.diy" />
+                <data android:scheme="https" android:host="marlowe.shakespeare.wtf" />
             </intent-filter>
 
         </activity>

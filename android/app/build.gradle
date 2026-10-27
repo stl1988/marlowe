@@ -6,15 +6,20 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// CI supplies the package version and a monotonically increasing build number.
+def packageVersion = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+def ciVersionName = System.getenv('ANDROID_VERSION_NAME') ?: packageVersion.version
+def ciVersionCode = (System.getenv('ANDROID_VERSION_CODE') ?: '1') as int
+
 android {
-    namespace = "diy.shakespeare.app"
+    namespace = "wtf.shakespeare.marlowe"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "diy.shakespeare.app"
+        applicationId "wtf.shakespeare.marlowe"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "9.9.2"
+        versionCode ciVersionCode
+        versionName ciVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

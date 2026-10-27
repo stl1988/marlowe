@@ -3,7 +3,7 @@
   "description": "Build custom apps with AI assistance using Marlowe, an open-source development environment based on Shakespeare",
   "homepage": "https://shakespeare.diy",
   "license": "AGPL-3.0-or-later",
-  "version": "10.15.0",
+  "version": "10.18.0",
   "type": "module",
   "author": {
     "name": "shakespeare.diy",
@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "npm i --silent && vite",
-    "build": "npm i --silent && vite build -l error && cp dist/index.html dist/404.html && echo 'Project built successfully!'",
+    "build": "npm i --silent && node scripts/generate-version.mjs && vite build -l error && cp dist/index.html dist/404.html && echo 'Project built successfully!'",
     "typecheck": "npm i --silent && tsc --noEmit",
     "test": "npm i --silent && eslint && vitest run --reporter=dot --silent && echo 'All tests passed!'",
     "keygen": "keytool -genkey -v -keystore android/app/my-upload-key.keystore -keyalg RSA -keysize 2048 -validity 10000 -alias upload",
@@ -113,7 +113,6 @@
     "use-stick-to-bottom": "^1.1.1",
     "vaul": "^0.9.3",
     "webln": "^0.3.2",
-    "workbox-window": "^7.3.0",
     "zod": "^3.25.67",
     "zod-to-json-schema": "^3.25.2"
   },
@@ -150,7 +149,6 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^6.3.5",
-    "vite-plugin-pwa": "^1.1.0",
     "vitest": "^4.1.8"
   }
 }

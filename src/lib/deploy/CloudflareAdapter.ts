@@ -274,6 +274,11 @@ export class CloudflareAdapter implements DeployAdapter {
     // Read build context (package.json, package-lock.json, tsconfig.json)
     const context = await readBuildContext(this.fs, projectPath);
 
+    const importMetaEnv = {
+      VERSION: context.packageJson.version ?? '0.0.0',
+      BUILD_DATE: new Date().toISOString(),
+    };
+
     // Resolve the entry point path
     const entryPointPath = entryPoint.startsWith('/') 
       ? entryPoint 
@@ -291,7 +296,7 @@ export class CloudflareAdapter implements DeployAdapter {
       sourcemap: false, // Workers typically don't need sourcemaps
       plugins: createPlugins(this.fs, projectPath, context, this.esmUrl),
       define: {
-        "import.meta.env": JSON.stringify({}),
+        "import.meta.env": JSON.stringify(importMetaEnv),
       },
     });
 

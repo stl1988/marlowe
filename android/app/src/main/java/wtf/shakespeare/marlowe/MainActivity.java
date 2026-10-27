@@ -1,4 +1,4 @@
-package diy.shakespeare.app;
+package wtf.shakespeare.marlowe;
 
 import com.getcapacitor.BridgeActivity;
 

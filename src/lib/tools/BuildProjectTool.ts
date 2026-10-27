@@ -23,6 +23,10 @@ export class BuildProjectTool implements Tool<void> {
         fs: this.fs,
         projectPath: this.cwd,
         domParser: new DOMParser(),
+        versionInfo: {
+          version: import.meta.env.VERSION ?? '0.0.0',
+          buildDate: new Date().toISOString(),
+        },
       });
 
       const fileCount = Object.keys(result.files).length;

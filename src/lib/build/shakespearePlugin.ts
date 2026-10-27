@@ -155,43 +155,6 @@ export function shakespearePlugin(options: ShakespearePluginOptions): Plugin {
         };
       });
 
-      // Handle "virtual:pwa-register/react" imports with a dummy API
-      build.onResolve({ filter: /^virtual:pwa-register\/react$/ }, (args) => {
-        return {
-          path: args.path,
-          namespace: "shakespeare-pwa-register",
-        };
-      });
-
-      // Provide dummy PWA register implementation
-      build.onLoad({ filter: /.*/, namespace: "shakespeare-pwa-register" }, () => {
-        return {
-          contents: `
-            // Dummy implementation of virtual:pwa-register/react
-
-            // useRegisterSW hook that returns dummy functions
-            const useRegisterSW = (options = {}) => {
-              console.log('[Shakespeare PWA Mock] useRegisterSW called:', options);
-
-              return {
-                needRefresh: [false, () => {}],
-                offlineReady: [false, () => {}],
-                updateServiceWorker: (reloadPage) => {
-                  console.log('[Shakespeare PWA Mock] updateServiceWorker called:', reloadPage);
-                  if (reloadPage) {
-                    window.location.reload();
-                  }
-                },
-              };
-            };
-
-            // Export the hook
-            export { useRegisterSW };
-          `,
-          loader: "js",
-        };
-      });
-
       // Add more dependency polyfills here as needed
       // Example structure for future dependencies:
       // build.onResolve({ filter: /^some-other-package$/ }, (args) => {

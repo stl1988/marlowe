@@ -1,5 +1,70 @@
 # Changelog
 
+## [10.18.0] - 2026-10-27
+
+### Added
+- **Restored all v10.16.0–v10.17.4 features after repository loss**: reconstructed the production implementation and recovered the exact historical changelog entries from the still-deployed v10.17.4 app. Marlowe is again an installable offline-first PWA with a static service worker, fail-safe confirmed updates, detailed live build phases, stable background keep-alive with a visible active indicator, and the Android APK GitHub Actions workflow.
+- **Offline PWA required for every new web project**: the default system prompt and `AGENTS.md` now explicitly require a web manifest, hand-written static `public/sw.js`, manual registration, manifest link, resilient runtime caching, safe updates and offline awareness — independent of Vite plugins.
+
+### Changed
+- **Build/update robustness**: build progress is emitted by the build pipeline itself and displayed for toolbar, file-save and AI-triggered builds. Browser builds bake real version metadata, emit matching `version.json`, and avoid unknown-version update loops. The update prompt activates a waiting worker or reloads through the network-first/cache fallback path.
+- **Reproducible CI and documentation**: GitHub workflows use `npm ci`; the PWA no longer depends on `vite-plugin-pwa`/`workbox-window`; PayPerQ live balance/session costs, streamed write/edit previews and mobile-friendly input controls remain integrated. Updated `public/llms.txt` and both identical changelog copies for v10.18.0.
+
+### Fixed
+- **Restored keep-alive reliability**: stable callbacks survive per-token re-renders, autoplay rejection retries on the next gesture, explicit media pauses are respected, foregrounding resumes playback, and late `play()` resolutions cannot revive a stopped audio element.
+- **Restored deterministic version metadata in browser builds**: the main bundle, web workers and Cloudflare worker bundling receive actual `VERSION`/`BUILD_DATE` values; stale `0.0.0` fallbacks no longer cause an endless update prompt.
+
+## [10.17.4] - 2026-10-14
+
+### Added
+- **Visible keep-alive indicator**: while the background keep-alive audio is actually playing (AI streaming or build running), a small teal `AudioLines` indicator appears in the chat input toolbar with an explanatory tooltip — so you can tell at a glance that the tab is protected before backgrounding it, instead of hunting for the OS media notification. Translated into all 12 UI languages.
+
+### Changed
+- **Keep-alive hardening** (`useKeepAlive`): `isActive` is now reactive React state that is only true while audio is *actually playing* (previously a stale ref snapshot). When the page returns to the foreground (`visibilitychange`/`pageshow`), playback is resumed or restarted if the OS suspended it while backgrounded — unless the user explicitly paused via the media notification, which is respected until the next run starts.
+
+## [10.17.3] - 2026-10-13
+
+### Fixed
+- **Keep-alive (silent `sine.mp3` loop) actually starts again during AI work**: the `useKeepAlive` effect depended on `startKeepAlive`, which callers invalidated on every render via a fresh `artwork` array literal. During AI streaming (a re-render per token) the effect's 100 ms start timer was cleared and re-set on every render, so it could starve indefinitely — the tab stayed unprotected and backgrounding it (especially on mobile) froze the tab and dropped the AI connection mid-run. The hook's callbacks are now referentially stable and read the latest options from a ref, so the timer fires reliably. Additionally: if `audio.play()` is rejected by an autoplay policy (no recent user gesture), playback now retries automatically on the next pointer/key interaction instead of giving up silently; media-session `pause`/`stop` handlers share the single teardown path; and a torn-down audio element can no longer be "revived" by a late `play()` resolution.
+
+## [10.17.2] - 2026-10-13
+
+### Fixed
+- **Clicking the update prompt now actually updates**: when the prompt was triggered by the `version.json` check (the common case), `handleUpdate` only called `registration.update()` and then silently closed the prompt without reloading. But `registration.update()` byte-compares the service worker *script* — and the hand-written `sw.js` has no embedded precache manifest, so its bytes are identical across app versions and no new worker ever appears for normal updates. The prompt now falls back to `window.location.reload()`: navigations are network-first, so the fresh `index.html` and new content-hashed bundles are picked up (offline, the SW cache fallback keeps the old version running — fail-safe). Also fixes a race where `applySWUpdate()` could no-op when called with a worker that the `updatefound` listener hadn't stored yet; `applySWUpdate` now accepts an optional explicit `ServiceWorker`.
+
+## [10.17.1] - 2026-10-12
+
+### Fixed
+- **Endless "update available" prompt on in-browser-built deployments**: since v10.16.1, `buildProject` emits a `version.json` with the real package version, but Marlowe's in-browser esbuild build defined `import.meta.env` as `{}` — so the running bundle reported its version as the `0.0.0` fallback and the periodic update check (every 10 min) concluded the server is always newer. The prompt could never be resolved: updating just loaded another version-less bundle. Two fixes: (1) the in-browser build now bakes the project's real `VERSION` and `BUILD_DATE` into `import.meta.env` (main bundle, web-worker sub-bundles, and Cloudflare worker bundling), mirroring the Vite CI build; (2) `checkForNewerVersion` never reports an update when the current version is the unknown `0.0.0` fallback (`UNKNOWN_VERSION`) — fail-safe for all already-deployed version-less builds, which keep detecting real updates via the service worker's byte-comparison path.
+
+## [10.17.0] - 2026-10-12
+
+### Added
+- **Live build progress indicator**: the in-browser build pipeline (`src/lib/build/index.ts`) now reports its current phase via a new optional `onProgress` callback on `BuildProjectOptions` and a `buildProgress` window event — `init` (reading package.json/lockfile/tsconfig), `bundle` (main esbuild pass), `workers` and `assets` (with current/total counters), `write` (per-file counters), `public`, and `done` (fired from a `finally` block, so the indicator resets even when a build fails). The Build button in the preview toolbar and the empty-preview state now show a spinner plus the current phase label (e.g. "Writing files (12/45)…") instead of a bare spinner — for builds triggered from the toolbar, file saves, *and* AI `build_project` tool calls alike. A running build from any source also disables the button, preventing accidental concurrent builds. `useBuildProject` exposes the phase as reactive state (`progress`). All labels translated into the 12 UI languages; the previously hardcoded English "Build"/"Retry" button labels are now proper i18n keys (`build`, `retry`).
+
+## [10.16.1] - 2026-10-07
+
+### Fixed
+- **PWA actually works in every deployment now**: v10.16.0 relied on `vite-plugin-pwa`, which only runs in the real Vite CI build. Marlowe's own in-browser esbuild build (used for nsite deploys) never runs Vite plugins and even stubbed `virtual:pwa-register/react` with a no-op — so the nsite deployment shipped **no service worker at all** ("no service worker active" in Settings, browser error page in airplane mode). PWA support is now pipeline-independent: a hand-written static `public/sw.js` (copied verbatim by both builds) registered from `src/main.tsx` via the new `src/lib/registerSW.ts`. `vite-plugin-pwa` and `workbox-window` were removed.
+- **`version.json` now exists in browser-built deployments too**: `buildProject` always writes a fresh `version.json` (version from the project's `package.json` + current build date) into the output after copying `public/`. Previously the file only existed in CI builds, so the update check had nothing to compare against on nsite deploys.
+
+### Changed
+- **Service worker strategy (hand-written, `public/sw.js`)**: since the browser build emits content-hashed filenames unknown at authoring time, precaching happens at runtime — install caches the scope root, navigations are network-first with cached app-shell fallback (survives HTTP 502), hashed assets cache-first, other same-origin GETs stale-while-revalidate, and only `response.ok` responses are cached. After the first visit the client posts its already-loaded resources (`CACHE_RESOURCES` message) so the worker backfills its cache. Updates still activate only on user confirmation (`SKIP_WAITING` → `controllerchange` → reload); old caches (including legacy Workbox caches) are cleaned up on activate.
+- **System prompt / AGENTS.md**: the PWA guidance now correctly recommends a hand-written static `public/sw.js` + manual registration for new projects (instead of `vite-plugin-pwa`), because Marlowe's build pipeline does not execute Vite plugins.
+- `useOffline().clearCache()` now also removes `marlowe-*` cache names (the new runtime cache).
+
+## [10.16.0] - 2026-10-07
+
+### Added
+- **Offline-first PWA, hardening against hoster outages**: the service worker now serves the precached `index.html` as navigation fallback, so Marlowe stays fully usable when the origin is unreachable (e.g. HTTP 502 from shakespeare.wtf) instead of being replaced by an error page. Registration switched to `registerType: 'prompt'` — a downloaded update is only activated after explicit user confirmation, never silently mid-session.
+- **Fail-safe version check**: `scripts/generate-version.mjs` writes a build-time `public/version.json` (version, commit SHA/tag, build date; excluded from the precache). `src/lib/versionCheck.ts` compares the running bundle against the server's `version.json` (fetched with `cache: 'no-store'`); any failure — offline, 5xx, malformed payload — resolves to "stay on the installed version", so the installed app is never broken by a failed update check. `PWAUpdatePrompt` combines the version check with the SW `needRefresh` signal and shows the available version number.
+- **Offline indicator with install hint**: the offline banner (now i18n'd in all 12 languages) explains that Marlowe keeps working offline and which features pause, and offers a one-tap PWA install button when the browser fires `beforeinstallprompt`. A short "back online" toast confirms reconnection.
+- **System-prompt guidance for resilient apps**: the default system prompt (`src/lib/system.ts`) and `AGENTS.md` now contain an "Offline Resilience & PWA" section — new projects should ship as installable PWAs (manifest + precaching service worker + navigation fallback), existing projects should be offered the upgrade, and update checks must always fail safe.
+- **Android APK via GitHub Actions**: new workflow `.github/workflows/android-apk.yml` (manual trigger + version tags) builds the web bundle, syncs Capacitor, and compiles a debug APK with Gradle (Temurin 21, Android SDK). The APK is uploaded as a workflow artifact and, on `v*` tags, attached to a GitHub Release. `android/app/build.gradle` now takes `versionCode`/`versionName` from CI env vars; the manifest deep-links `marlowe.shakespeare.wtf` and `capacitor.config.ts` uses Marlowe branding (`wtf.shakespeare.marlowe`, `#0a1a1a`).
+
+### Fixed
+- **GitHub Actions test workflow was broken**: it deleted `package-lock.json` and ran a floating `npm install`, making CI non-deterministic and frequently failing. Both `test.yml` and `deploy.yml` now use `npm ci` with the committed lockfile (plus npm caching), and the deploy workflow relies on the `build` script for `version.json`/`404.html` generation.
+
 ## [10.15.0] - 2026-09-30
 
 ### Added
