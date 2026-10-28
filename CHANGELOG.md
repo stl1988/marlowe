@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.19.1] - 2026-10-28
+
+### Fixed
+- **Self-build versions and fresh release notes**: browser builds of Marlowe now use the project's `package.json` version for both `import.meta.env.VERSION` and `version.json` instead of inheriting the running host's older version. Update checks can therefore discover self-built releases correctly. Changelog requests now revalidate, and the service worker serves `CHANGELOG.md` network-first with an offline cache fallback, so a previous release no longer remains displayed after a deployment.
+
 ## [10.19.0] - 2026-10-27
 
 ### Added

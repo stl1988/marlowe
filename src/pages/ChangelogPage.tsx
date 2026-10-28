@@ -38,7 +38,7 @@ export function ChangelogPage() {
 
 
   useEffect(() => {
-    fetch('/CHANGELOG.md')
+    fetch('/CHANGELOG.md', { cache: 'no-cache' })
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText);
         return res.text();

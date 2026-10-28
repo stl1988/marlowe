@@ -10,7 +10,7 @@ const STORAGE_KEY = 'shakespeare:app-version';
 /** Fetch the first changelog item for the given version (or the latest entry). */
 async function fetchChangelogExcerpt(version: string): Promise<string | undefined> {
   try {
-    const res = await fetch('/CHANGELOG.md');
+    const res = await fetch('/CHANGELOG.md', { cache: 'no-cache' });
     if (!res.ok) return undefined;
     const markdown = await res.text();
     const entries = parseChangelog(markdown);

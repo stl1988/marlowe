@@ -217,11 +217,10 @@ async function bundle(
   // Read build context (package.json, package-lock.json, tsconfig.json)
   const context = await readBuildContext(fs, projectPath);
   const versionInfo = {
-    // Ordinary projects carry their own version. When rebuilding Marlowe
-    // itself, use the currently running app version to avoid an update loop.
-    version: context.packageJson.name === 'marlowe' && options.versionInfo
-      ? options.versionInfo.version
-      : context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
+    // The project's own package version is authoritative, including when
+    // rebuilding Marlowe itself. Inheriting the host version would hide new
+    // self-built releases from the update check.
+    version: context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
     buildDate: options.versionInfo?.buildDate ?? new Date().toISOString(),
   };
   const importMetaEnv = {
@@ -586,14 +585,11 @@ export async function buildProject(options: BuildProjectOptions): Promise<{
       // Public directory doesn't exist, which is fine
     }
 
-    // Always emit fresh update metadata after public/ has been copied. This is
-    // computed here as well as in bundle(), so version.json never depends on a
-    // variable scoped to a different function.
+    // Always emit fresh update metadata after public/ has been copied. Use the
+    // same project-version rule as bundle(), so the app and version.json agree.
     const context = await readBuildContext(fs, projectPath);
     const versionJson = JSON.stringify({
-      version: context.packageJson.name === 'marlowe' && options.versionInfo
-        ? options.versionInfo.version
-        : context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
+      version: context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
       buildDate: options.versionInfo?.buildDate ?? new Date().toISOString(),
     }, null, 2) + '\n';
     await fs.writeFile(`${outputPath}/version.json`, new TextEncoder().encode(versionJson));

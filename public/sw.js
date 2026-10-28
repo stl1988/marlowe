@@ -25,9 +25,11 @@
  *     app is never replaced by an error page.
  *   - Only `response.ok` responses are ever cached — error pages are never
  *     stored.
- *   - version.json is never cached and never intercepted: it must always
- *     reflect the server's true state for the fail-safe update check.
- *   - Updates only activate when the user confirms them: the client posts
+ *  - version.json is never cached and never intercepted: it must always
+ *    reflect the server's true state for the fail-safe update check.
+ *  - CHANGELOG.md is network-first with a cache fallback, so release notes are
+ *    fresh after deployments but remain readable offline.
+ *  - Updates only activate when the user confirms them: the client posts
  *     {type: 'SKIP_WAITING'} and this worker stays `waiting` until then.
  */
 
@@ -38,6 +40,9 @@ const BASE = () => self.registration.scope;
 
 /** Requests that must always hit the network (never cached, never intercepted). */
 const NEVER_CACHE_PATHS = [/\/version\.json$/];
+
+/** Release notes: fresh online, with the last good copy available offline. */
+const NETWORK_FIRST_PATHS = [/\/CHANGELOG\.md$/];
 
 self.addEventListener('install', (event) => {
   // Cache the app shell entry. Individual failures are non-fatal: runtime
@@ -140,6 +145,29 @@ self.addEventListener('fetch', (event) => {
           const cached = await cache.match(BASE());
           if (cached) return cached;
           throw new Error('Offline and no cached app shell available');
+        }
+      })(),
+    );
+    return;
+  }
+
+  // ── Release notes: network-first with offline fallback ───────────────
+  if (NETWORK_FIRST_PATHS.some((re) => re.test(url.pathname))) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        try {
+          const response = await fetch(request);
+          if (response.ok) {
+            await cache.put(request, response.clone());
+            return response;
+          }
+          const cached = await cache.match(request);
+          return cached || response;
+        } catch {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          throw new Error('Offline and no cached changelog available');
         }
       })(),
     );
