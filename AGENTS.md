@@ -468,6 +468,7 @@ The AI is instructed to:
 - Only trigger `build_project` when explicitly needed
 - Commit exactly once at the end of a turn (no intermediate commits)
 - Keep prose responses short and direct — no preambles or postambles
+- Older user images are replaced with re-read hints in the provider request; only the latest user image message is kept. Up to three recent tool-result images are retained in both normal and Economy Mode. Stored chat history is never stripped, and `read` can reopen an image at any time without putting Base64 into tool text.
 
 ### Where the toggle lives
 

@@ -586,10 +586,16 @@ export async function buildProject(options: BuildProjectOptions): Promise<{
       // Public directory doesn't exist, which is fine
     }
 
-    // Always emit fresh update metadata after public/ has been copied. Use the
-    // same build timestamp as the bundle, and never replace a valid generated
-    // version file with the unknown-version fallback after a read failure.
-    const versionJson = JSON.stringify(versionInfo, null, 2) + '\n';
+    // Always emit fresh update metadata after public/ has been copied. This is
+    // computed here as well as in bundle(), so version.json never depends on a
+    // variable scoped to a different function.
+    const context = await readBuildContext(fs, projectPath);
+    const versionJson = JSON.stringify({
+      version: context.packageJson.name === 'marlowe' && options.versionInfo
+        ? options.versionInfo.version
+        : context.packageJson.version ?? options.versionInfo?.version ?? '0.0.0',
+      buildDate: options.versionInfo?.buildDate ?? new Date().toISOString(),
+    }, null, 2) + '\n';
     await fs.writeFile(`${outputPath}/version.json`, new TextEncoder().encode(versionJson));
 
     // Copy NIP.md if it exists in project root

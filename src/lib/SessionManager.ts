@@ -23,7 +23,16 @@ export type AIMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam | {
   content: string;
   reasoning_content?: string;
   tool_calls?: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[];
+} | {
+  /** Images returned by tools are carried separately and moved to user messages
+   * before sending because OpenAI tool messages only accept text. */
+  role: 'tool';
+  tool_call_id: string;
+  content: Array<OpenAI.Chat.Completions.ChatCompletionContentPartText | OpenAI.Chat.Completions.ChatCompletionContentPartImage>;
 };
+
+/** Number of recent tool-result images re-sent to the model. */
+const MAX_TOOL_IMAGES = 3;
 
 /**
  * Remove `reasoning_content` from assistant messages before sending.
@@ -63,24 +72,93 @@ const ECONOMY_MAX_STEPS = 25;
  *
  * Send-time transformation only — the session history keeps full outputs.
  */
-function elideOldToolOutputs(
-  msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
+function elideOldToolOutputs(msgs: AIMessage[]): AIMessage[] {
   const cutoff = msgs.length - ECONOMY_RECENT_WINDOW;
   if (cutoff <= 0) return msgs;
 
   return msgs.map((msg, idx) => {
-    if (idx >= cutoff) return msg;
-    if (msg.role !== 'tool' || typeof msg.content !== 'string') return msg;
-    if (msg.content.length <= ECONOMY_TOOL_MIN_ELIDE) return msg;
+    if (idx >= cutoff || msg.role !== 'tool') return msg;
 
-    const head = msg.content.slice(0, ECONOMY_TOOL_HEAD_CHARS);
-    const omitted = msg.content.length - ECONOMY_TOOL_HEAD_CHARS;
+    if (typeof msg.content === 'string') {
+      if (msg.content.length <= ECONOMY_TOOL_MIN_ELIDE) return msg;
+      const head = msg.content.slice(0, ECONOMY_TOOL_HEAD_CHARS);
+      const omitted = msg.content.length - ECONOMY_TOOL_HEAD_CHARS;
+      return {
+        ...msg,
+        content: `${head}\n… [${omitted} characters omitted to save credits (economy mode). Re-run the tool if you need this data again.]`,
+      };
+    }
+
+    // Elide only text. Image attachments are limited separately by
+    // evictOldToolImages(), and must never be flattened into base64 text.
+    const text = msg.content.flatMap((part) => part.type === 'text' ? [part.text] : []).join('\n');
+    if (text.length <= ECONOMY_TOOL_MIN_ELIDE) return msg;
+    const head = text.slice(0, ECONOMY_TOOL_HEAD_CHARS);
+    const omitted = text.length - ECONOMY_TOOL_HEAD_CHARS;
     return {
       ...msg,
-      content: `${head}\n… [${omitted} characters omitted to save credits (economy mode). Re-run the tool if you need this data again.]`,
+      content: [
+        { type: 'text' as const, text: `${head}\n… [${omitted} characters omitted to save credits (economy mode). Re-run the tool if you need this data again.]` },
+        ...msg.content.filter((part) => part.type === 'image_url'),
+      ],
     };
   });
+}
+
+/** Retain recent tool images while removing older ones without losing context. */
+function evictOldToolImages(msgs: AIMessage[]): AIMessage[] {
+  let kept = 0;
+  const result: AIMessage[] = [];
+
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const msg = msgs[i];
+    if (msg.role !== 'tool' || !Array.isArray(msg.content) || !msg.content.some((part) => part.type === 'image_url')) {
+      result.unshift(msg);
+      continue;
+    }
+
+    const content = [...msg.content].reverse().map((part) => {
+      if (part.type !== 'image_url') return part;
+      if (kept < MAX_TOOL_IMAGES) {
+        kept++;
+        return part;
+      }
+      return {
+        type: 'text' as const,
+        text: '[Image shown to you earlier, now removed from the context to save tokens. Read the file again to see it.]',
+      };
+    }).reverse();
+    result.unshift({ ...msg, content } as AIMessage);
+  }
+  return result;
+}
+
+/** Move image-bearing tool results into API-valid user messages. */
+function moveToolImagesToUserMessages(msgs: AIMessage[]): AIMessage[] {
+  const result: AIMessage[] = [];
+  let pending: OpenAI.Chat.Completions.ChatCompletionContentPartImage[] = [];
+
+  const flush = () => {
+    if (pending.length === 0) return;
+    result.push({
+      role: 'user',
+      content: [{ type: 'text', text: 'Images from the tool results above:' }, ...pending],
+    });
+    pending = [];
+  };
+
+  for (const msg of msgs) {
+    if (msg.role !== 'tool') flush();
+    if (msg.role === 'tool' && Array.isArray(msg.content)) {
+      const text = msg.content.flatMap((part) => part.type === 'text' ? [part.text] : []).join('\n');
+      pending.push(...msg.content.flatMap((part) => part.type === 'image_url' ? [part] : []));
+      result.push({ role: 'tool', tool_call_id: msg.tool_call_id, content: text });
+    } else {
+      result.push(msg);
+    }
+  }
+  flush();
+  return result;
 }
 
 export interface SessionState {
@@ -397,28 +475,35 @@ export class SessionManager {
           economyMode,
         });
 
-        // Strip image_url parts from all user messages except the last one.
-        // The model has already seen and responded to earlier images, so re-sending
-        // them on every turn just burns tokens. The VFS text path (e.g. "Added file: /tmp/…")
-        // is kept, so the model can `read` the file again if it needs to.
-        const evictSeenImages = (msgs: OpenAI.Chat.Completions.ChatCompletionMessageParam[]): OpenAI.Chat.Completions.ChatCompletionMessageParam[] => {
-          // Find the index of the last user message
-          let lastUserIdx = -1;
+        // Normal mode keeps user-attached reference images. Economy mode keeps
+        // only the most recent image-bearing user message and replaces older
+        // images with a short note; the VFS path remains so they can be re-read.
+        const evictSeenImages = (msgs: AIMessage[]): AIMessage[] => {
+          // Find the latest user message that actually contains an upload,
+          // rather than merely the latest user message (which may be text-only).
+          let lastUserImageIdx = -1;
           for (let i = msgs.length - 1; i >= 0; i--) {
-            if (msgs[i].role === 'user') {
-              lastUserIdx = i;
+            const msg = msgs[i];
+            if (msg.role === 'user' && Array.isArray(msg.content) && msg.content.some((part) => part.type === 'image_url')) {
+              lastUserImageIdx = i;
               break;
             }
           }
 
           return msgs.map((msg, idx) => {
-            if (idx === lastUserIdx) return msg; // keep the latest user message intact
             if (msg.role !== 'user' || typeof msg.content === 'string' || !Array.isArray(msg.content)) return msg;
 
-            const filtered = msg.content.filter(part => part.type !== 'image_url');
-            if (filtered.length === msg.content.length) return msg; // no images to strip
-
-            return { ...msg, content: filtered.length > 0 ? filtered : '' };
+            let imageRemoved = false;
+            const content = msg.content.map((part) => {
+              if (part.type !== 'image_url') return part;
+              if (idx === lastUserImageIdx) return part;
+              imageRemoved = true;
+              return {
+                type: 'text' as const,
+                text: '[Image from an earlier user message, omitted in economy mode. Read the added file again to see it.]',
+              };
+            });
+            return imageRemoved ? { ...msg, content } : msg;
           });
         };
 
@@ -474,16 +559,18 @@ export class SessionManager {
           });
         };
 
-        // Prepare messages for AI
-        // Note: User messages with image_url content parts are valid ChatCompletionMessageParam types
-        // The AIMessage type includes ChatCompletionMessageParam, so this cast is safe
+        // Prepare messages for AI. These transformations affect only the request,
+        // never the stored history or the images shown in the chat. Economy
+        // filtering happens before tool images become synthetic user messages.
+        let history: AIMessage[] = session.messages;
+        if (economyMode) {
+          history = evictSeenImages(history);
+          history = elideOldToolOutputs(history);
+        }
+        const preparedHistory = moveToolImagesToUserMessages(evictOldToolImages(history));
         let messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = (systemPrompt
-          ? [{ role: 'system', content: systemPrompt }, ...session.messages]
-          : session.messages) as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
-
-        // Evict images the model has already seen (all except the last user message).
-        // This is a send-time transformation only — session.messages stays intact for the UI.
-        messages = evictSeenImages(messages);
+          ? [{ role: 'system', content: systemPrompt }, ...preparedHistory]
+          : preparedHistory) as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
 
         // Filter out unsupported image formats (keep only JPG/JPEG/PNG for API)
         // This ensures the UI shows all image types, but API only receives supported formats
@@ -500,11 +587,6 @@ export class SessionManager {
         // that behave better with reasoning in context (e.g. cache coherence).
         if (!sendReasoning) {
           messages = stripReasoningContent(messages);
-        }
-
-        // Economy mode: elide older tool outputs to keep the re-sent context small
-        if (economyMode) {
-          messages = elideOldToolOutputs(messages);
         }
 
         // Prepare completion options
@@ -793,7 +875,7 @@ export class SessionManager {
                 toolArgs = rawArgs ? JSON.parse(rawArgs) : {};
               }
               const result = await tool.execute(toolArgs);
-              await this.addToolMessage(projectId, functionToolCall.id, result.content);
+              await this.addToolMessage(projectId, functionToolCall.id, result.content, result.images);
 
               // Update session cost if tool returned a cost
               if (result.cost !== undefined) {
@@ -931,7 +1013,7 @@ export class SessionManager {
   /**
    * Helper to add tool messages and update conversation
    */
-  private async addToolMessage(projectId: string, toolCallId: string, content: string): Promise<void> {
+  private async addToolMessage(projectId: string, toolCallId: string, content: string, images: string[] = []): Promise<void> {
     let finalContent = content;
 
     // Check if content exceeds limits
@@ -943,11 +1025,20 @@ export class SessionManager {
       finalContent = `The tool call succeeded but the output was truncated. Full output saved to: ${filepath}\nUse \`grep\` to search the full content or \`read\` with offset/limit to view specific sections.`;
     }
 
-    const toolMessage: AIMessage = {
-      role: 'tool',
-      content: finalContent,
-      tool_call_id: toolCallId
-    };
+    const toolMessage: AIMessage = images.length > 0
+      ? {
+        role: 'tool',
+        content: [
+          { type: 'text', text: finalContent },
+          ...images.map((url) => ({ type: 'image_url' as const, image_url: { url } })),
+        ],
+        tool_call_id: toolCallId,
+      }
+      : {
+        role: 'tool',
+        content: finalContent,
+        tool_call_id: toolCallId,
+      };
 
     await this.addMessage(projectId, toolMessage);
   }

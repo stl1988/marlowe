@@ -443,8 +443,8 @@ export const ChatInput = memo(function ChatInput({
                   <p className="font-medium mb-1">{economyMode ? 'Economy Mode ON' : 'Economy Mode OFF'}</p>
                   <p className="text-xs text-muted-foreground">
                     {economyMode
-                      ? 'AI will minimise tool calls, skip unnecessary reads, and keep replies short to save credits.'
-                      : 'Click to enable credit-saving mode. The AI will be instructed to use fewer tool calls and write shorter replies.'}
+                      ? 'AI will minimise tool calls, keep replies short, elide old outputs and keep only the latest user image in context. Read older files again when needed.'
+                      : 'Click to enable credit-saving mode. User images stay in context; the three latest tool images are kept in both modes.'}
                   </p>
                 </TooltipContent>
               </Tooltip>

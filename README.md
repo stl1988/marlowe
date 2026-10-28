@@ -15,6 +15,7 @@ https://marlowe.shakespeare.wtf
 - **Redeem gift cards** with shareable links for instant credits
 - **Economy Mode** — a per-project credit saver that works on two levels: prompt instructions for the AI *and* technical enforcement (old tool outputs are elided from the re-sent context, step budget capped). Assistant reasoning traces are never re-sent to providers
 - **Live file-writing preview** — watch files grow in the chat while the AI streams `write`/`edit` tool calls, with a blinking cursor and live line counter
+- **Persistent image reading** — real image attachments instead of truncated Base64 tool output, PNG conversion for vision APIs, optional cropped detail views, and economy-aware retention of user/tool images
 - **Live build progress and background keep-alive** — current build phase, file counters and a visible indicator while the tab is protected during AI work
 - **Offline-first, installable PWA** — hand-written service worker (no Vite PWA plugin), cached app shell for hoster outages, fail-safe confirmed updates, offline banner and install hint
 - **Offline PWAs by default** — the system prompt requires new web projects to ship a manifest, static service worker and offline indicator; no Vite PWA plugin required

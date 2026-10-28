@@ -3,11 +3,13 @@ import { z } from "zod";
 
 import type { Tool, ToolResult } from "./Tool";
 import type { JSRuntimeFS } from "../JSRuntime";
+import { cropImage, fileToUrl, getImageDimensions, resizeImageIfNeeded, toApiImage, type ImageRegion } from "../imageUtils";
 
 interface ReadParams {
   filePath: string;
   offset?: number;
   limit?: number;
+  region?: ImageRegion;
 }
 
 interface ReadToolOptions {
@@ -34,12 +36,19 @@ Usage:
 - Results are returned using cat -n format, with line numbers starting at 1
 - You have the capability to call multiple tools in a single response. It is always better to speculatively read multiple files as a batch that are potentially useful.
 - If you read a file that exists but has empty contents you will receive a system reminder warning in place of file contents.
-- You can read image files using this tool.`;
+- You can read image files using this tool. The result includes the image's pixel dimensions and attaches the image for you to view.
+- Images are downscaled before you see them, so small details can get lost. To inspect part of an image up close, pass \`region\` (x, y, width, height in the image's own pixels).`;
 
   readonly inputSchema = z.object({
     filePath: z.string().describe("The path to the file to read"),
     offset: z.coerce.number().describe("The line number to start reading from (0-based)").optional(),
     limit: z.coerce.number().describe("The number of lines to read (defaults to 2000)").optional(),
+    region: z.object({
+      x: z.coerce.number().min(0),
+      y: z.coerce.number().min(0),
+      width: z.coerce.number().positive(),
+      height: z.coerce.number().positive(),
+    }).describe("For images: the area to zoom into, in the image's pixels").optional(),
   });
 
   constructor(fs: JSRuntimeFS, cwd: string, options?: ReadToolOptions) {
@@ -78,19 +87,36 @@ Usage:
         return { content: tree };
       }
 
-      // Check if it's an image file
-      const isImage = this.isImageFile(filepath);
-      if (isImage) {
-        // Read image as base64
+      // Images travel as structured attachments, not as a huge base64 string
+      // in the tool text (which would be truncated by the session history).
+      if (this.isImageFile(filepath)) {
         const bytes = await this.fs.readFile(filepath);
-        const base64 = this.arrayBufferToBase64(bytes);
         const ext = this.getFileExtension(filepath).toLowerCase();
-        const mimeType = this.getMimeType(ext);
-        
-        // Return base64 data URL in the content
-        return {
-          content: `[Image file: ${ext.toUpperCase()} file]\n\nImage read successfully.\n\nData URL: data:${mimeType};base64,${base64}`,
-        };
+        const name = filepath.split('/').pop() || filepath;
+        const source = new File([bytes], name, { type: this.getMimeType(ext) });
+        const header = `[Image file: ${ext.toUpperCase()}, ${this.formatFileSize(bytes.length)}`;
+
+        try {
+          const { width, height } = await getImageDimensions(source);
+          let image = source;
+          let info = `${header}, ${width}×${height} px]\n\nThe image is attached for you to view.`;
+
+          if (args.region) {
+            const crop = await cropImage(source, args.region);
+            const { x, y, width: regionWidth, height: regionHeight } = crop.region;
+            image = crop.file;
+            info = `${header}, ${width}×${height} px]\n\nShowing the region x=${x}, y=${y}, ${regionWidth}×${regionHeight} px, enlarged ${crop.scale}×. The image is attached for you to view.`;
+          }
+
+          image = await resizeImageIfNeeded(await toApiImage(image), {
+            maxFileSize: 3.75 * 1024 * 1024,
+          });
+          return { content: info, images: [await fileToUrl(image)] };
+        } catch (error) {
+          return {
+            content: `${header}]\n\nThe image could not be decoded. The file may be corrupt or not actually a ${ext.toUpperCase()}. ${error instanceof Error ? error.message : String(error)}`,
+          };
+        }
       }
 
       // Check if it's binary
@@ -249,18 +275,6 @@ Usage:
       'avif': 'image/avif',
     };
     return mimeTypes[extension] || 'application/octet-stream';
-  }
-
-  /**
-   * Convert ArrayBuffer to base64
-   */
-  private arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
-    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
   }
 
   /**

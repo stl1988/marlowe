@@ -43,7 +43,7 @@ export const AIMessageItem = memo(({
         .map(item => {
           if (typeof item === 'string') return item;
           if (item.type === 'text') return item.text;
-          if (item.type === 'image_url') return `[Image: ${item.image_url.url}]`;
+          if (item.type === 'image_url') return '[Image attached to this tool result]';
           return '[Unknown content]';
         })
         .join('\n');
@@ -54,6 +54,9 @@ export const AIMessageItem = memo(({
   // Special rendering for tool messages
   if (message.role === 'tool') {
     const content = getContent();
+    const imageUrls = Array.isArray(message.content)
+      ? message.content.flatMap((part) => part.type === 'image_url' ? [part.image_url.url] : [])
+      : [];
 
     // Get tool call arguments
     let toolArgs: Record<string, unknown> = {};
@@ -68,13 +71,35 @@ export const AIMessageItem = memo(({
     }
 
     return (
-      <ToolCallDisplay
-        toolName={toolName}
-        toolArgs={toolArgs}
-        state="completed"
-        result={content}
-        projectId={projectId}
-      />
+      <>
+        <ToolCallDisplay
+          toolName={toolName}
+          toolArgs={toolArgs}
+          state="completed"
+          result={content}
+          projectId={projectId}
+        />
+        {imageUrls.length > 0 && (
+          <div className="mt-1 flex max-w-sm flex-col gap-2">
+            {imageUrls.map((url, index) => (
+              <button
+                key={`${index}-${url.slice(0, 40)}`}
+                type="button"
+                className="overflow-hidden rounded-lg border border-border text-left transition-opacity hover:opacity-90"
+                onClick={() => setExpandedImageUrl(url)}
+                aria-label={`Open tool image ${index + 1}`}
+              >
+                <img
+                  src={url}
+                  alt={`Tool result ${index + 1}`}
+                  className="max-h-80 w-full bg-muted object-contain"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </>
     );
   }
 

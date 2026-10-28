@@ -1,5 +1,15 @@
 # Changelog
 
+## [10.19.0] - 2026-10-27
+
+### Added
+- **Persistent image reading and visual history** (selectively ported from Shakespeare 9.21.0/9.22.0): `read` now returns compact image metadata and a real image attachment instead of a giant Base64 string in tool text. Images therefore no longer turn into a truncated text output when the AI opens them again later. PNG/JPEG are resized as needed; WebP, GIF and other supported image formats are converted to PNG for vision APIs without modifying the original VFS file. The optional `region` parameter crops and enlarges image details for closer inspection, and image-bearing tool results are displayed in the chat.
+- **Economy-aware image retention**: normal mode keeps all user-attached images in context, while Economy Mode retains the most recent user image message and replaces older images with a short re-read hint. In both modes the three most recent tool-result images are retained; older tool images become text reminders rather than unusable truncated Base64. Images are moved into API-valid user messages only at send time; the persisted chat history retains the structured attachments.
+
+### Fixed
+- **Browser build version metadata scope**: `buildProject()` now computes `version.json` in its own scope from the build context and supplied version options, fixing the `ReferenceError: versionInfo is not defined` failure without changing the stable `bundle()` return type.
+- **Protected features preserved**: root nsite deployment (kind 15128), PayPerQ credits and session costs, Economy Mode, Reasoning History, offline PWA behavior and all other Marlowe-exclusive features remain intact. This change does not port Shakespeare's named-site-only simplification.
+
 ## [10.18.0] - 2026-10-27
 
 ### Added

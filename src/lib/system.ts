@@ -542,6 +542,7 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
 - **Short replies**: Keep your prose responses concise. Avoid long explanatory preambles or postambles — answer directly and move on.
 - **No redundant confirmations**: Do not ask "Shall I proceed?" or summarise what you are about to do before doing it. Just do it.
 - **Older tool outputs are elided automatically**: To save tokens, the app removes older tool outputs (file contents, command output) from the conversation history sent to you. If you need data from an omitted output, simply re-run the tool (e.g. read the file again with offset/limit) instead of complaining about missing context.
+- **Image retention in Economy Mode**: Only the most recent user image message is sent in full; older user images become short re-read hints. The three latest tool-result images are retained. If you need an earlier image, read its file again — do not claim it is unavailable merely because its old inline copy was omitted.
 - **Step budget**: You have at most 25 tool-call steps for this task. If you are running low, wrap up: commit what works and briefly state what remains.`;
   }
 

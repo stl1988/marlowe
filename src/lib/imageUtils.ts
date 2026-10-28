@@ -7,143 +7,143 @@ export interface ResizeOptions {
   quality?: number;
 }
 
-/**
- * Resizes an image file if it exceeds size or dimension limits.
- * 
- * @param file - The image file to potentially resize
- * @param opts - Resize options with defaults
- * @returns Promise resolving to the original or resized File
- */
-export async function resizeImageIfNeeded(file: File, opts: ResizeOptions = {}): Promise<File> {
-  const {
-    maxDimension = 2048,
-    maxFileSize = 5 * 1024 * 1024, // 5MB
-    quality = 0.92,
-  } = opts;
+/** Image types accepted by the OpenAI-compatible vision APIs we support. */
+const API_IMAGE_TYPES = ['image/png', 'image/jpeg'];
 
-  // Only process image files
-  if (!file.type.startsWith('image/')) {
-    return file;
-  }
-
-  // Check if resize is needed based on file size
-  const needsResize = file.size > maxFileSize;
-
-  if (!needsResize) {
-    // Still need to check dimensions
-    const dimensions = await getImageDimensions(file);
-    if (dimensions.width <= maxDimension && dimensions.height <= maxDimension) {
-      return file;
-    }
-  }
-
-  // Resize the image
-  return await resizeImage(file, maxDimension, quality);
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
-/**
- * Gets the dimensions of an image file.
- * 
- * @param file - The image file
- * @returns Promise resolving to width and height
- */
-async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+/** Load an image for inspection/conversion, always releasing its object URL. */
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
-
     img.onload = () => {
       URL.revokeObjectURL(url);
-      resolve({ width: img.width, height: img.height });
+      resolve(img);
     };
-
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('Failed to load image'));
     };
-
     img.src = url;
   });
 }
 
-/**
- * Resizes an image to fit within maxDimension while maintaining aspect ratio.
- * 
- * @param file - The image file to resize
- * @param maxDimension - Maximum width or height
- * @param quality - JPEG quality 0-1
- * @returns Promise resolving to resized File
- */
-async function resizeImage(file: File, maxDimension: number, quality: number): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
+/** Return the pixel dimensions of an image file. */
+export async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  const img = await loadImage(file);
+  return { width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
+}
 
-    img.onload = () => {
-      URL.revokeObjectURL(url);
+/** Resize an image without enlarging it, optionally changing its MIME type. */
+async function resizeImage(
+  file: File,
+  maxDimension: number,
+  quality: number,
+  type = file.type || 'image/jpeg',
+): Promise<File> {
+  const img = await loadImage(file);
+  let width = img.naturalWidth || img.width;
+  let height = img.naturalHeight || img.height;
 
-      // Calculate new dimensions maintaining aspect ratio
-      let { width, height } = img;
-      
-      if (width > maxDimension || height > maxDimension) {
-        if (width > height) {
-          height = (height / width) * maxDimension;
-          width = maxDimension;
-        } else {
-          width = (width / height) * maxDimension;
-          height = maxDimension;
-        }
-      }
+  if (width > maxDimension || height > maxDimension) {
+    if (width > height) {
+      height = (height / width) * maxDimension;
+      width = maxDimension;
+    } else {
+      width = (width / height) * maxDimension;
+      height = maxDimension;
+    }
+  }
 
-      // Create canvas and draw resized image
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error('Failed to get canvas context'));
-        return;
-      }
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(width));
+  canvas.height = Math.max(1, Math.round(height));
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Failed to get canvas context');
 
-      ctx.drawImage(img, 0, 0, width, height);
+  // A white background keeps transparent PNG/WebP artwork readable when an API
+  // requires JPEG. It does not alter the original file in the VFS.
+  if (type === 'image/jpeg') {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  context.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // Convert canvas to blob
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error('Failed to create blob from canvas'));
-            return;
-          }
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  if (!blob) throw new Error('Failed to create image blob');
+  return new File([blob], file.name, { type: blob.type, lastModified: Date.now() });
+}
 
-          // Create new File from blob with original name
-          const resizedFile = new File([blob], file.name, {
-            type: file.type || 'image/jpeg',
-            lastModified: Date.now(),
-          });
+/** Resize an image only when its file size or dimensions require it. */
+export async function resizeImageIfNeeded(file: File, opts: ResizeOptions = {}): Promise<File> {
+  const {
+    maxDimension = 2048,
+    maxFileSize = 5 * 1024 * 1024,
+    quality = 0.92,
+  } = opts;
 
-          resolve(resizedFile);
-        },
-        file.type || 'image/jpeg',
-        quality
-      );
-    };
+  if (!file.type.startsWith('image/')) return file;
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Failed to load image for resizing'));
-    };
-
-    img.src = url;
-  });
+  if (file.size <= maxFileSize) {
+    const dimensions = await getImageDimensions(file);
+    if (dimensions.width <= maxDimension && dimensions.height <= maxDimension) return file;
+  }
+  return resizeImage(file, maxDimension, quality);
 }
 
 /**
- * Converts a File to a base64-encoded data URL for API consumption.
- *
- * @param file - The file to convert
- * @returns Promise resolving to base64 data URL string
+ * Convert WebP, GIF, BMP and other image types to PNG for the vision API.
+ * The source file on disk is never rewritten; this only prepares the view sent
+ * to the model.
  */
+export async function toApiImage(file: File): Promise<File> {
+  if (API_IMAGE_TYPES.includes(file.type)) return file;
+  const { width, height } = await getImageDimensions(file);
+  return resizeImage(file, Math.max(width, height), 1, 'image/png');
+}
+
+export interface ImageRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Crop a region and enlarge it with sharp nearest-neighbor pixels. */
+export async function cropImage(
+  file: File,
+  region: ImageRegion,
+  minSize = 1024,
+  maxScale = 8,
+): Promise<{ file: File; region: ImageRegion; scale: number }> {
+  const img = await loadImage(file);
+  const x = Math.max(0, Math.min(Math.floor(region.x), img.width - 1));
+  const y = Math.max(0, Math.min(Math.floor(region.y), img.height - 1));
+  const width = Math.max(1, Math.min(Math.ceil(region.width), img.width - x));
+  const height = Math.max(1, Math.min(Math.ceil(region.height), img.height - y));
+  const scale = Math.max(1, Math.min(maxScale, Math.floor(minSize / Math.max(width, height))));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Failed to get canvas context');
+  context.imageSmoothingEnabled = false;
+  context.drawImage(img, x, y, width, height, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+  if (!blob) throw new Error('Failed to create image crop');
+  return {
+    file: new File([blob], `${file.name.replace(/\.[^.]*$/, '')}-crop.png`, { type: 'image/png' }),
+    region: { x, y, width, height },
+    scale,
+  };
+}
+
+/** Convert a File to a base64 data URL for the vision API or the chat UI. */
 export async function fileToUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -154,10 +154,7 @@ export async function fileToUrl(file: File): Promise<string> {
         reject(new Error('Failed to read file as data URL'));
       }
     };
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
+    reader.onerror = () => reject(new Error(getErrorMessage(reader.error)));
     reader.readAsDataURL(file);
   });
 }
-
