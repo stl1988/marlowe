@@ -52,7 +52,8 @@ import { TodoReadTool } from '@/lib/tools/TodoReadTool';
 import { AppTool } from '@/lib/tools/AppTool';
 import { useEconomyMode } from '@/hooks/useEconomyMode';
 import { useSendReasoning } from '@/hooks/useSendReasoning';
-import { useAICredits } from '@/hooks/useAICredits';
+import { aiCreditsQueryKey, useAICredits } from '@/hooks/useAICredits';
+import { isPPQProvider } from '@/lib/ppq';
 import { NostrReadCustomNipTool } from '@/lib/tools/NostrReadCustomNipTool';
 import { ReadBipTool } from '@/lib/tools/ReadBipTool';
 import { ReadBoltTool } from '@/lib/tools/ReadBoltTool';
@@ -545,20 +546,87 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
     }
   }, [providerModel, settings.providers]);
 
-  // Live credit balance (PayPerQ, Shakespeare AI, …). Refreshed whenever a
-  // generation finishes, and once more after a delay because some providers
-  // (e.g. PayPerQ) bill post-hoc and need a moment to settle.
+  // Live credit balance. PayPerQ is polled throughout generation and for a
+  // short settling window afterwards because charges can be posted post-hoc.
+  const ppqProvider = currentProvider && isPPQProvider(currentProvider) ? currentProvider : undefined;
+  const ppqScope = ppqProvider ? aiCreditsQueryKey(ppqProvider).join(':') : undefined;
   const { data: creditsData, refetch: refetchCredits } = useAICredits(currentProvider);
+  const creditsBalance = creditsData?.amount;
   const wasLoadingRef = useRef(false);
+  const creditsFetchingRef = useRef(false);
+  const previousPPQBalanceRef = useRef<{ scope: string; projectId: string; balance: number } | null>(null);
+
+  const refreshCredits = useCallback(() => {
+    // Do not cancel or stack a slow balance request when the polling interval
+    // fires again. React Query still owns caching and error handling.
+    if (creditsFetchingRef.current) return;
+    creditsFetchingRef.current = true;
+    void refetchCredits().then(
+      () => { creditsFetchingRef.current = false; },
+      () => { creditsFetchingRef.current = false; },
+    );
+  }, [refetchCredits]);
+
   useEffect(() => {
     const justFinished = wasLoadingRef.current && !isLoading;
     wasLoadingRef.current = isLoading;
+
+    if (isLoading) {
+      if (!ppqProvider) return;
+      refreshCredits();
+      const interval = setInterval(refreshCredits, 2000);
+      return () => clearInterval(interval);
+    }
+
     if (!justFinished) return;
 
-    refetchCredits();
-    const timer = setTimeout(() => refetchCredits(), 5000);
+    refreshCredits();
+    if (ppqProvider) {
+      const interval = setInterval(refreshCredits, 2000);
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+      }, 15000);
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+
+    // Other credit-bearing providers keep the original post-hoc refresh.
+    const timer = setTimeout(refreshCredits, 5000);
     return () => clearTimeout(timer);
-  }, [isLoading, refetchCredits]);
+  }, [isLoading, ppqProvider, refreshCredits]);
+
+  // Reconcile PayPerQ session costs from actual balance deductions instead of
+  // token estimates. Balance increases are top-ups/rebases, never negative cost.
+  useEffect(() => {
+    if (!ppqProvider || !ppqScope || typeof creditsBalance !== 'number') {
+      previousPPQBalanceRef.current = null;
+      return;
+    }
+
+    const previous = previousPPQBalanceRef.current;
+    if (!previous || previous.scope !== ppqScope || previous.projectId !== projectId) {
+      previousPPQBalanceRef.current = { scope: ppqScope, projectId, balance: creditsBalance };
+      return;
+    }
+
+    if (previous.balance === creditsBalance) return;
+
+    const deduction = previous.balance - creditsBalance;
+    previousPPQBalanceRef.current = { scope: ppqScope, projectId, balance: creditsBalance };
+
+    if (deduction > 0) {
+      void sessionManager.addPayPerQBalanceCost(projectId, deduction);
+    }
+  }, [creditsBalance, projectId, ppqProvider, ppqScope, sessionManager]);
+
+  const resetPPQCostTracking = useCallback(() => {
+    wasLoadingRef.current = false;
+    previousPPQBalanceRef.current = ppqProvider && ppqScope && typeof creditsBalance === 'number'
+      ? { scope: ppqScope, projectId, balance: creditsBalance }
+      : null;
+  }, [creditsBalance, projectId, ppqProvider, ppqScope]);
 
   // Calculate context usage percentage
   const currentModel = useMemo(() => {
@@ -784,16 +852,18 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
 
   const handleStartFresh = useCallback(() => {
     setShowNewChatDialog(false);
+    resetPPQCostTracking();
     internalStartNewSession();
     onNewChat();
-  }, [internalStartNewSession, onNewChat]);
+  }, [internalStartNewSession, onNewChat, resetPPQCostTracking]);
 
   const handleCarryOverContext = useCallback(() => {
     setShowNewChatDialog(false);
+    resetPPQCostTracking();
     const carryOverNote = buildContextCarryOverNote(messages);
     internalStartNewSession(carryOverNote);
     onNewChat();
-  }, [internalStartNewSession, onNewChat, messages]);
+  }, [internalStartNewSession, onNewChat, messages, resetPPQCostTracking]);
 
   // Slash commands
   const slashCommands: SlashCommand[] = [
@@ -1070,7 +1140,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
         currentModelContextLength={currentModel?.contextLength}
         lastInputTokens={lastInputTokens}
         totalCost={totalCost}
-        creditsBalance={creditsData?.amount}
+        creditsBalance={creditsBalance}
         keepAliveActive={keepAliveActive}
         isDragOver={isDragOver}
         onDragEnter={handleDragEnter}

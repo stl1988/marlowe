@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.20.1] - 2026-11-03
+
+### Fixed
+- **Live PayPerQ balance and actual session costs**: the remaining balance now refreshes immediately and every 2 seconds during generation, then continues for a 15-second post-hoc settling window without stacking overlapping balance requests. Session and project costs are accumulated from actual positive balance deltas on every refresh instead of adding PayPerQ token/provider estimates a second time. Balance increases are treated as top-ups rather than negative costs, and provider, project and new-chat transitions reset the comparison baseline.
+
 ## [10.20.0] - 2026-11-03
 
 ### Added

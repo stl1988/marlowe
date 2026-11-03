@@ -17,6 +17,7 @@ import { Git } from './git';
 import type { NPool } from '@nostrify/nostrify';
 import type { AppConfig } from '@/contexts/AppContext';
 import { getSentryInstance } from './sentry';
+import { isPPQProvider } from './ppq';
 
 export type AIMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam | {
   role: 'assistant';
@@ -1044,6 +1045,22 @@ export class SessionManager {
   }
 
   /**
+   * Add an actual PayPerQ balance deduction to the current session and project.
+   * Called when a newer balance response is lower than the previous response.
+   */
+  async addPayPerQBalanceCost(projectId: string, deduction: number): Promise<void> {
+    if (!Number.isFinite(deduction) || deduction <= 0) return;
+
+    const session = this.sessions.get(projectId);
+    if (!session) return;
+
+    session.totalCost = (session.totalCost || 0) + deduction;
+    this.sessions.set(projectId, session);
+    this.emit('costUpdated', projectId, session.totalCost);
+    await this.accumulateProjectCost(projectId, deduction);
+  }
+
+  /**
    * Update session cost and context usage based on usage data
    */
   private async updateSessionCost(projectId: string, usage: { prompt_tokens: number; completion_tokens: number; cost?: number }, providerModel: string): Promise<void> {
@@ -1056,6 +1073,16 @@ export class SessionManager {
     // whether the provider gives a direct cost or we need to calculate it.
     session.lastInputTokens = usage.prompt_tokens;
     this.emit('contextUsageUpdated', projectId, usage.prompt_tokens);
+
+    // PayPerQ costs are reconciled from actual balance deltas in ChatPane.
+    // Adding direct or token-estimated usage cost here as well would double
+    // count the same charge when the next balance response arrives.
+    try {
+      const { provider } = parseProviderModel(providerModel, this.getSettings().providers);
+      if (isPPQProvider(provider)) return;
+    } catch {
+      // Preserve the existing cost fallback if a provider cannot be resolved.
+    }
 
     // If provider gives direct cost, use it
     if (typeof usage.cost === 'number') {
