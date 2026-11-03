@@ -237,6 +237,15 @@ When an app uses Nostr:
 - **Never use very short query timeouts.** Relay round-trips routinely take a second or more — especially on mobile connections — so a timeout like 200 ms will silently return incomplete or empty results. Use at least ~1.5 s (\`AbortSignal.timeout(1500)\`) for routine queries, and 3–5 s for large or critical ones.
 - **Stream events instead of waiting for whole batches.** Prefer a streaming approach when fetching events, so the UI renders content incrementally as it arrives from relays — e.g. iterate the request stream (such as Nostrify's \`nostr.req()\`) and append each event to state as it lands, rather than awaiting an entire result set before showing anything. Combine streaming with timestamp-based pagination (\`until\`) for feeds.
 
+## Blossom Decentralization (BUD-10 Required)
+
+Whenever a project uses Blossom in any form — uploads, media/blob storage, NIP-94/\`imeta\`, BUD-03 server lists, or Blossom URLs — **always use and implement BUD-10 (Blossom URI Schema)**. Read BUD-10 with the \`read_bud\` tool before changing the implementation.
+
+- Create content-addressed references as \`blossom:<64-lowercase-hex-sha256>.<ext>\`, defaulting to \`.bin\` when the extension is unknown. Include the exact byte size in \`sz\`, at least one known server in \`xs\`, and the uploader's pubkey in \`as\` whenever available. Preserve repeated \`xs\`/\`as\` parameters and include multiple server hints when mirrors exist.
+- Keep existing HTTPS URLs and NIP-94 tags for backward compatibility, but never make a single server URL the only durable blob reference when a BUD-10 URI can be emitted.
+- When accepting, sharing, parsing, or resolving \`blossom:\` URIs, implement the complete relevant flow: validate the hash and extension; try \`xs\` servers in order (HTTPS first when no scheme is given); resolve \`as\` authors through their BUD-03 kind 10063 server lists; then try configured/well-known fallback servers or a local cache. Verify the downloaded blob's SHA-256 and its size when \`sz\` is present.
+- Put BUD-10 creation, parsing, and resolution in shared utilities instead of duplicating partial implementations. Never strip discovery hints when normalizing or copying a URI.
+
 ## Deployment Options
 
 **CRITICAL**: Do NOT assume any deployment options are available or configured. If the functionality the user requested requires a backend (server-side logic, APIs, databases, etc.), you MUST explain this to the user before proceeding.

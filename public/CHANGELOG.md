@@ -1,5 +1,10 @@
 # Changelog
 
+## [10.20.0] - 2026-11-03
+
+### Added
+- **BUD-10 required for every Blossom-using project**: the default system prompt and `AGENTS.md` now mandate the Blossom URI Schema for uploads, media/blob storage, NIP-94/`imeta`, server lists and Blossom URL handling. Generated projects must create and preserve content-addressed `blossom:` URIs with `sz`, `xs` and `as` discovery hints, resolve server hints and BUD-03 kind 10063 author server lists, use fallback locations, and verify blob hashes and sizes. HTTPS URLs and NIP-94 tags remain supported for compatibility, but a single server URL must no longer be the only durable blob reference.
+
 ## [10.19.1] - 2026-10-28
 
 ### Fixed
