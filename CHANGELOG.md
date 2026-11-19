@@ -1,5 +1,19 @@
 # Changelog
 
+## [10.20.2] - 2026-11-19
+
+### Added
+- **Self-test loop guard in the system prompt**: a new "Do Not Get Stuck in Self-Testing Loops" section tells the AI to build once per change set instead of after every edit, never repeat the same verification, stop after two failed fix attempts and report instead of guessing further, read console output sparingly, and never invent test suites. The rules apply in every mode; Economy Mode additionally repeats them in short form.
+- **Technical loop enforcement**: prompt rules alone don't stop every model, so `SessionManager` now also counts verification steps that happen without any file change in between. After two consecutive `build_project` calls a warning is appended to the tool result, after three consecutive `read_console_messages` calls a "nothing new can appear" warning is appended, and at four consecutive builds with no code change the generation is force-stopped with a short explanation. Any file-changing tool (`write`, `edit`, `shell`, `npm_add_package`, `npm_remove_package`) resets the counters.
+- **Small-screen / preview awareness**: the system prompt now reports the live **Viewport** size and **Live Preview** state, plus a "Small Screens and the Preview" section. On phones and narrow windows the preview pane is a separate tab and is unmounted during chat, so the AI is told not to debug the console there, to rely on `build_project` output, to keep changes batched, and to ask the user at most once per turn to switch to the Preview tab.
+- **`src/lib/viewport.ts`**: shared helpers for viewport detection (`SMALL_SCREEN_BREAKPOINT` = 1080 px, `getViewportInfo()`), preview-frame tracking (`registerPreviewFrame` / `unregisterPreviewFrame` / `isPreviewFrameMounted`) and `projectIdFromPath()`.
+
+### Changed
+- **`read_console_messages` is preview-aware**: `ReadConsoleMessagesTool` accepts `{ cwd }`, derives the project id and checks whether that project's preview iframe is actually mounted. When it isn't — the normal case on small screens while chatting — the tool result carries an explicit warning that the messages may be stale, including a one-time instruction to ask the user to open the Preview tab. `PreviewPane` registers/unregisters its frame whenever the preview tab is active and a build exists.
+- **`build_project` reports preview visibility**: a successful build now appends a short note when no preview frame is mounted, telling the AI that the build output is the authoritative result and that the console should not be read until the user opens the Preview tab.
+- **Single source of truth for the breakpoint**: `useIsMobile` now imports `SMALL_SCREEN_BREAKPOINT` from `src/lib/viewport.ts`, so the UI, the system prompt and the tools can never disagree about what counts as a small screen.
+- **Documentation**: `AGENTS.md` documents the loop guard and the small-screen/preview rules; `public/llms.txt` describes both behaviours.
+
 ## [10.20.1] - 2026-11-03
 
 ### Fixed

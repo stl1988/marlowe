@@ -7,6 +7,7 @@ import nunjucks from "nunjucks";
 import { JSRuntimeFS } from "./JSRuntime";
 import { AVAILABLE_SHELL_COMMAND_NAMES } from "./commands/names";
 import { getAllSkills } from "./skills";
+import { getViewportInfo, isPreviewFrameMounted, projectIdFromPath } from "./viewport";
 import type { AppConfig } from "@/contexts/AppContext";
 
 export interface ModelInfo {
@@ -56,6 +57,8 @@ You are operating within **Marlowe**, an AI-powered website builder — a fork o
 - **Current Working Directory**: {{ cwd }}
 - **Repository URL**: {% if repositoryUrl %}{{ repositoryUrl }}{% else %}none{% endif %}
 - **Deployed URL**: {% if deployedUrl %}{{ deployedUrl }}{% else %}not deployed{% endif %}
+- **Viewport**: {{ viewport.width }}×{{ viewport.height }} px — {% if viewport.isSmallScreen %}small screen (single-pane layout){% else %}wide screen (side-by-side layout){% endif %}
+- **Live Preview**: {% if previewLive %}mounted and running{% elif viewport.isSmallScreen %}NOT mounted — the preview is a separate tab on this screen size{% else %}NOT mounted{% endif %}
 {% if projectTemplate %}- **Project Template**: {{ projectTemplate.name }}{% endif %}
 
 Users can add or remove templates in Settings > AI (\`{{ location.origin }}/settings/ai\`).
@@ -131,6 +134,34 @@ Users interact with Marlowe by:
 4. **Previewing Changes**: Viewing their website in real-time as it's being built
 5. **Project Management**: Organizing and accessing multiple projects from the homepage
 6. **Deploying Projects**: Publishing their creations to public URLs (requires Nostr login)
+
+## Do Not Get Stuck in Self-Testing Loops
+
+Endless test/self-test cycles are the single biggest credit waster. Some models fall into loops of building, reading the console, patching, and rebuilding forever. Avoid that:
+
+- **Build, don't re-verify.** After \`build_project\` succeeds you are done with verification. Do not build again unless you changed code afterwards.
+- **One check per change, not one check per file.** Verify at the end of a change set — not after every edit.
+- **Never loop on the same error.** If a fix attempt failed twice, stop, explain the cause to the user, and propose the next step instead of trying a third blind variation.
+- **Console output is a hint, not a test harness.** Read it at most once or twice per turn, and only when you actually expect errors.
+- **Do not invent test suites.** Write tests only when the user explicitly asks for them.
+- **Trust the build result.** A successful build plus a plausible code review is sufficient; you cannot click through the running app, so do not pretend to.
+- **Economy of motion**: make the smallest set of tool calls that solves the task, then answer.
+
+## Small Screens and the Preview
+
+Marlowe's layout depends on the viewport size (see **Viewport** / **Live Preview** above):
+
+- **Wide screens (≈1080 px and up)**: chat and preview are side by side. The preview iframe stays mounted and producing console output while the user chats.
+- **Small screens (phones, narrow windows)**: the UI is a three-tab layout — Chat, Preview, Code. The preview tab is unmounted while the user is chatting, so **no preview is running and no fresh console messages arrive**. A project that has never been built also has nothing to run.
+
+Rules for small screens:
+
+- **Do not debug the console.** \`read_console_messages\` will only return leftovers from an earlier preview run. Read \`build_project\` output instead — it reports real compile errors.
+- **Ask before asking for the preview.** If you genuinely need console/visual feedback, ask the user **once** to switch to the Preview tab and tell you when it's open. Never ask on every turn, and never assume they did.
+- **Prefer static reasoning.** Read the code, check types, and rely on the build result rather than interactive probing.
+- **Keep changes batched** so the user only has to switch tabs a few times.
+
+On wide screens the preview is live: \`read_console_messages\` reflects the currently mounted app, and refreshing/rebuilding happens automatically after builds.
 
 ## Virtual Filesystem Structure
 
@@ -475,10 +506,15 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
   }
 
   // Build context object for template
+  const viewport = getViewportInfo();
+  const previewLive = isPreviewFrameMounted(projectIdFromPath(cwd));
+
   const context = {
     mode,
     date,
     cwd,
+    viewport,
+    previewLive,
     repositoryUrl,
     deployedUrl,
     config,
@@ -534,6 +570,21 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
     rendered = templateToRender;
   }
 
+  // Environment rules are appended after rendering so they always apply —
+  // including when the user replaced the base template with a custom one.
+  // (The default template already renders this information inline, so the
+  // block is only added for custom templates to avoid duplication.)
+  if (template) {
+    rendered += `\n\n---\n\n## Environment Awareness (always active)
+
+- **Viewport**: ${viewport.width}×${viewport.height} px — ${viewport.isSmallScreen ? 'small screen (single-pane Chat/Preview/Code tabs)' : 'wide screen (chat and preview side by side)'}.
+- **Live preview**: ${previewLive ? 'mounted and running — console messages are fresh.' : 'NOT mounted — no app is running right now and no fresh console output arrives.'}
+
+**Avoid self-testing loops.** Build once at the end of a change set, never after every edit. Do not re-verify the same thing twice. Read console output sparingly and only when errors are expected. If two fix attempts fail, stop, explain the cause and propose the next step instead of guessing again. Never write tests unless the user asks.
+
+${!previewLive ? `**No live preview is available right now.**${viewport.isSmallScreen ? ' The screen is too small for the side-by-side layout, so the preview lives in its own tab and is unmounted while the user chats.' : ''} Do not debug the console in this state — rely on \`build_project\` output instead. If console or visual feedback is genuinely required, ask the user **once** (not every turn) to switch to the Preview tab and tell you when it is open.` : '**The preview is live.** Console output and rebuilds reflect the currently running app.'}`;
+  }
+
   // Append economy mode instructions when enabled.
   // These hard rules are injected at the end of the system prompt so they always take effect,
   // regardless of what the base template says.
@@ -552,7 +603,9 @@ export async function makeSystemPrompt(opts: MakeSystemPromptOpts): Promise<stri
 - **No redundant confirmations**: Do not ask "Shall I proceed?" or summarise what you are about to do before doing it. Just do it.
 - **Older tool outputs are elided automatically**: To save tokens, the app removes older tool outputs (file contents, command output) from the conversation history sent to you. If you need data from an omitted output, simply re-run the tool (e.g. read the file again with offset/limit) instead of complaining about missing context.
 - **Image retention in Economy Mode**: Only the most recent user image message is sent in full; older user images become short re-read hints. The three latest tool-result images are retained. If you need an earlier image, read its file again — do not claim it is unavailable merely because its old inline copy was omitted.
-- **Step budget**: You have at most 25 tool-call steps for this task. If you are running low, wrap up: commit what works and briefly state what remains.`;
+- **Step budget**: You have at most 25 tool-call steps for this task. If you are running low, wrap up: commit what works and briefly state what remains.
+- **No verification loops**: one \`build_project\` at the end of your change set is enough. Never build → read console → patch → build repeatedly. If two fix attempts fail, stop and explain.
+- **Small screen = no live preview**: when the viewport is small, the preview is unmounted while the user chats. Do not call \`read_console_messages\` unless the prompt says the preview is mounted; ask the user at most once to open the Preview tab.`;
   }
 
   // Append user-controlled additional instructions, if any.

@@ -258,7 +258,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
       read_cyberspace: new ReadCyberspaceTool(),
       blossom_upload: new BlossomUploadTool(fs, cwd, user?.signer),
       shell: new ShellTool(fs, cwd, git, config.corsProxy, user?.signer),
-      read_console_messages: new ReadConsoleMessagesTool(),
+      read_console_messages: new ReadConsoleMessagesTool({ cwd }),
       skill: new SkillTool(fs, availableSkills),
       webfetch: new WebFetchTool({ corsProxy: config.corsProxy }),
       websearch: new WebSearchTool(),
@@ -495,7 +495,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
 
   // Handle console error help requests
   const handleConsoleErrorHelp = useCallback(async () => {
-    const tool = new ReadConsoleMessagesTool();
+    const tool = new ReadConsoleMessagesTool({ cwd });
     const toolCallId = `call_${crypto.randomUUID().replace(/-/g, '')}`;
 
     await addMessage({
@@ -522,7 +522,7 @@ export const ChatPane = forwardRef<ChatPaneRef, ChatPaneProps>(({
     });
 
     await startGeneration(providerModel);
-  }, [addMessage, providerModel, startGeneration]);
+  }, [addMessage, cwd, providerModel, startGeneration]);
 
   // Handle error dismissal
   const handleErrorDismiss = useCallback(() => {

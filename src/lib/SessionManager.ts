@@ -65,6 +65,32 @@ const ECONOMY_TOOL_MIN_ELIDE = 400;
 const ECONOMY_MAX_STEPS = 25;
 
 /**
+ * Tools that actually change the project. Any of these resets the self-test
+ * loop counters, because after a change a new verification is meaningful.
+ */
+const FILE_MUTATING_TOOLS = new Set([
+  'write',
+  'edit',
+  'shell',
+  'npm_add_package',
+  'npm_remove_package',
+]);
+
+/**
+ * Consecutive `build_project` calls without an intervening file change before
+ * a warning is injected, and before the step loop is force-stopped.
+ *
+ * Some models fall into build → read console → build → … loops that burn
+ * credits without changing anything. Prompt rules alone don't reliably stop
+ * them, so the loop is also enforced technically.
+ */
+const REDUNDANT_BUILD_WARN = 2;
+const REDUNDANT_BUILD_STOP = 4;
+
+/** Same idea for repeated console reads with no changes in between. */
+const REDUNDANT_CONSOLE_WARN = 3;
+
+/**
  * Economy mode: replace the content of older tool messages (outside the
  * recent window) with a compact placeholder. Tool outputs (file contents,
  * command output, search results) are the biggest token hogs in long agent
@@ -386,6 +412,13 @@ export class SessionManager {
 
       let stepCount = 0;
       const maxSteps = session.maxSteps || 50;
+
+      // Self-test loop detection. Counters track how many verification steps
+      // ran without any file change in between, so a model that only builds
+      // and reads the console (but changes nothing) is stopped early instead
+      // of burning credits until the step budget runs out.
+      let buildsSinceChange = 0;
+      let consoleReadsSinceChange = 0;
 
       // Main AI generation loop
       while (stepCount < maxSteps) {
@@ -876,7 +909,34 @@ export class SessionManager {
                 toolArgs = rawArgs ? JSON.parse(rawArgs) : {};
               }
               const result = await tool.execute(toolArgs);
-              await this.addToolMessage(projectId, functionToolCall.id, result.content, result.images);
+              let toolContent = result.content;
+
+              // --- Self-test loop guard -------------------------------------
+              // Verification steps that don't change anything are counted. A
+              // model that only builds and reads the console gets stopped
+              // before it burns the whole step budget on identical rounds.
+              // The two counters are independent: a console read does not
+              // reset the build counter, because alternating
+              // build→console→build→console is the most common loop shape.
+              if (FILE_MUTATING_TOOLS.has(toolName)) {
+                buildsSinceChange = 0;
+                consoleReadsSinceChange = 0;
+              } else if (toolName === 'build_project') {
+                buildsSinceChange++;
+
+                if (buildsSinceChange >= REDUNDANT_BUILD_WARN) {
+                  toolContent += `\n\n⚠️ Self-test loop guard: this is consecutive build #${buildsSinceChange} without any file change in between. Do NOT build again — the previous build already succeeded. Either change code, or stop and report the result.`;
+                }
+              } else if (toolName === 'read_console_messages') {
+                consoleReadsSinceChange++;
+
+                if (consoleReadsSinceChange >= REDUNDANT_CONSOLE_WARN) {
+                  toolContent += `\n\n⚠️ Self-test loop guard: this is consecutive console read #${consoleReadsSinceChange} without any file change in between. Nothing new can appear. Stop reading the console: fix the code, rebuild once, or report the result.`;
+                }
+              }
+              // --------------------------------------------------------------
+
+              await this.addToolMessage(projectId, functionToolCall.id, toolContent, result.images);
 
               // Update session cost if tool returned a cost
               if (result.cost !== undefined) {
@@ -902,6 +962,20 @@ export class SessionManager {
         session.lastFinishReason = finishReason;
         this.emit('finishReasonChanged', projectId, finishReason);
         await this.saveFinishReason(projectId, finishReason);
+
+        // Hard stop for genuine self-test loops: several builds in a row with
+        // no code change in between. Continuing would only cost credits.
+        if (buildsSinceChange >= REDUNDANT_BUILD_STOP) {
+          console.warn(
+            `[Self-test loop guard] Stopping generation for ${projectId}: ` +
+            `${buildsSinceChange} consecutive builds without any file change.`,
+          );
+          await this.addMessage(projectId, {
+            role: 'assistant',
+            content: `ℹ️ Stopped an automatic self-test loop: the project was built ${buildsSinceChange} times in a row without any code change in between. The last build succeeded — further verification would not produce new information.`,
+          });
+          break;
+        }
 
         // Check if we should stop
         if (finishReason === 'stop') {

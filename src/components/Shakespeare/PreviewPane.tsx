@@ -31,6 +31,7 @@ import type { BuildProgress } from '@/lib/build';
 import { useToast } from '@/hooks/useToast';
 import { useSessionSubscription } from '@/hooks/useSessionSubscription';
 import { getPreviewInjectedScript } from '@/lib/previewInjectedScript';
+import { registerPreviewFrame, unregisterPreviewFrame } from '@/lib/viewport';
 
 interface PreviewPaneProps {
   projectId: string;
@@ -566,6 +567,17 @@ export function PreviewPane({ projectId, activeTab, onToggleView, isPreviewable 
     }
     prevProjectIdRef.current = projectId;
   }, [projectId, clearErrors]);
+
+  // Track whether a live preview iframe is mounted so the AI can tell fresh
+  // console output from leftovers of an earlier preview run (crucial on small
+  // screens, where the preview lives in a separate tab and is unmounted).
+  useEffect(() => {
+    const live = activeTab === 'preview' && hasBuiltProject;
+    if (!live) return;
+
+    registerPreviewFrame(projectId);
+    return () => unregisterPreviewFrame(projectId);
+  }, [projectId, activeTab, hasBuiltProject]);
 
   useEffect(() => {
     checkForBuiltProject();

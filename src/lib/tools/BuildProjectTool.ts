@@ -1,6 +1,7 @@
 import type { Tool, ToolResult } from "./Tool";
 import type { JSRuntimeFS } from "../JSRuntime";
 import { buildProject } from "../build";
+import { getViewportInfo, isPreviewFrameMounted, projectIdFromPath } from "../viewport";
 
 export class BuildProjectTool implements Tool<void> {
   private fs: JSRuntimeFS;
@@ -33,10 +34,30 @@ export class BuildProjectTool implements Tool<void> {
       const fileList = Object.keys(result.files).map(file => `  📄 ${file}`).join('\n');
 
       return {
-        content: `✅ Successfully built project!\n\n📁 Output: ${result.outputPath}\n📦 Files generated: ${fileCount}\n\n${fileList}\n\n🚀 Your project is ready for deployment!`
+        content: `✅ Successfully built project!\n\n📁 Output: ${result.outputPath}\n📦 Files generated: ${fileCount}\n\n${fileList}\n\n🚀 Your project is ready for deployment!${this.buildVisibilityNote()}`
       };
     } catch (error) {
       throw new Error(`❌ Build failed: ${String(error)}`);
     }
+  }
+
+  /**
+   * Tell the AI whether the freshly built preview is actually visible.
+   *
+   * On small screens the preview lives in its own tab, so a successful build
+   * does not mean the user is looking at it. This prevents pointless console
+   * reads right after a build ("the preview shows nothing!").
+   */
+  private buildVisibilityNote(): string {
+    const viewport = getViewportInfo();
+    const projectId = projectIdFromPath(this.cwd);
+
+    if (isPreviewFrameMounted(projectId)) return '';
+
+    if (viewport.isSmallScreen) {
+      return `\n\nℹ️ The preview is NOT mounted (small screen: Chat/Preview/Code are separate tabs), so the user cannot see the result until they switch to the Preview tab. Do not read the console now — the build output above is the authoritative result. Mention the Preview tab at most once.`;
+    }
+
+    return `\n\nℹ️ The preview is not mounted right now; the user needs the Preview tab open to see the result. Do not read the console until it is mounted.`;
   }
 }

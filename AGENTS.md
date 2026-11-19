@@ -67,7 +67,7 @@ Marlowe provides AI agents with specialized tools for project development (note:
 - **ReadMipTool**: Read a Marmot protocol specification document from GitHub (`marmot-protocol/marmot`). The repo no longer uses numbered MIP files — pass a relative path such as `"foundation/identity.md"`, `"protocol-core/group-setup.md"`, or `"layout.md"`. Read `layout.md` first for the full document list.
 - **ReadNutTool**: Read a Cashu NUT (Notation, Usage, and Terminology) specification from GitHub
 - **BlossomUploadTool**: Upload files from the project to Blossom media hosting, returns a public URL
-- **ReadConsoleMessagesTool**: Read console messages from project preview with filtering capabilities
+- **ReadConsoleMessagesTool**: Read console messages from project preview with filtering capabilities (preview-aware: warns when no preview iframe is mounted, e.g. on small screens)
 
 #### Shell Commands
 
@@ -479,6 +479,38 @@ The AI is instructed to:
 ### Storage
 
 Economy mode is persisted per-project in `.git/shakespeare/settings.json` as `{ "economyMode": true }`. The `DotAI` class exposes `readEconomyMode()` and `writeEconomyMode(enabled)` methods. The `SessionManager` reads this file before building the system prompt on each generation step.
+
+## Avoiding Self-Test Loops
+
+Endless build/test/patch cycles are the biggest source of wasted credits. The default system prompt contains a "Do Not Get Stuck in Self-Testing Loops" section that instruction-tuned models follow:
+
+- Build at the end of a change set, never after every edit
+- Do not re-verify the same thing twice
+- After two failed fix attempts, stop and report instead of guessing further
+- Read console output sparingly and only when errors are expected
+- Never write tests unless asked
+- Treat a successful build plus a code review as sufficient verification
+
+These rules are appended in every mode; Economy Mode additionally caps the step budget and repeats them in short form.
+
+Prompt rules alone don't stop every model, so the loop is also enforced technically in `SessionManager.startGeneration()`:
+
+- Counters track verification steps with no intervening file change (`buildsSinceChange`, `consoleReadsSinceChange`).
+- 2 consecutive builds → the tool result gets a "do not build again" warning.
+- 3 consecutive console reads → a "nothing new can appear" warning.
+- 4 consecutive builds without a change → generation is force-stopped with a short explanation in the chat.
+- `write`, `edit`, `shell`, `npm_add_package` and `npm_remove_package` reset both counters (`FILE_MUTATING_TOOLS`).
+
+## Small Screens and Preview Awareness
+
+Marlowe's layout is responsive at `SMALL_SCREEN_BREAKPOINT` (1080 px, `src/lib/viewport.ts`, mirrored by `useIsMobile`):
+
+- **Wide screens**: chat and preview are side by side; the preview iframe stays mounted and streams console messages.
+- **Small screens**: Chat / Preview / Code are separate tabs and the preview pane is unmounted while the user chats — no iframe, no fresh console output, and builds triggered from the chat only become visible after switching tabs.
+
+Because of this, the system prompt includes the live **Viewport** and **Live Preview** state, and contains a "Small Screens and the Preview" section instructing the AI not to debug the console there, to rely on `build_project` output, and to ask the user **at most once** per turn to open the Preview tab when visual/console feedback is genuinely needed.
+
+`read_console_messages` is aware of this: `ReadConsoleMessagesTool` takes `{ cwd }`, derives the project id via `projectIdFromPath()`, and checks `isPreviewFrameMounted()` from `src/lib/viewport.ts`. `PreviewPane` registers its iframe (via `registerPreviewFrame`/`unregisterPreviewFrame`) whenever the preview tab is active and a build exists. When no frame is mounted, the tool appends an explicit warning that the returned messages may be stale.
 
 ## "Vibed with MKStack"
 
